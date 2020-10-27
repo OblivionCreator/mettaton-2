@@ -155,20 +155,6 @@ async def register(ctx):
     await _registerChar(ctx, user)
 
 
-@dataclass
-class CharacterStoreItem:
-    """Stores Character Information in a Class"""
-    id: int
-    name: str
-    owner: str
-    age: str
-    abil: str
-    appear: str
-    backg: str
-    person: str
-    prefilled: str
-
-
 @bot.command(name='view', aliases=['cm', 'charmanage', 'samwhy'])
 async def _view(ctx, idinput=''):
     if not idinput.isnumeric():
@@ -176,8 +162,14 @@ async def _view(ctx, idinput=''):
     else:
         sanID = int(idinput)
 
+        charData = await _getChar(sanID)
+
+        print(charData)
+
+        name, = charData[3:4]
+
         embedVar = discord.Embed(title=f"Viewing Character {sanID}", description=f"Character Information for ID: {sanID}", color=0xff0000)
-        embedVar.add_field(name="Name:", value="TEST", inline=False)
+        embedVar.add_field(name="Name:", value=name, inline=True)
         embedVar.add_field(name="Age:", value="TEST", inline=False)
         embedVar.add_field(name="Gender:", value="TEST", inline=False)
         embedVar.add_field(name="Other fields:", value="TEST", inline=False)
@@ -185,16 +177,14 @@ async def _view(ctx, idinput=''):
 
         charListStr = ''
 
-
-async def _getChar(charID, embedVar):
+async def _getChar(charID):
 
     cursor = conn.cursor()
 
     cursor.execute(f"SELECT * FROM charlist WHERE charID IS {charID}")
-    count = cursor.fetchone()[0]
 
-    charInfo = [CharacterStoreItem(charID, name, owner, age, abil, appear, backg, person, prefilled) for
-                charID, name, owner, age, abil, appear, backg, person, prefilled in cursor]
+    charInfo = cursor.fetchone()
+    print(charInfo)
 
     return charInfo
 
