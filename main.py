@@ -168,7 +168,8 @@ async def _view(ctx, idinput=''):
 
         name, = charData[3:4]
 
-        embedVar = discord.Embed(title=f"Viewing Character {sanID}", description=f"Character Information for ID: {sanID}", color=0xff0000)
+        embedVar = discord.Embed(title=f"Viewing Character {sanID}",
+                                 description=f"Character Information for ID: {sanID}", color=0xff0000)
         embedVar.add_field(name="Name:", value=name, inline=True)
         embedVar.add_field(name="Age:", value="TEST", inline=False)
         embedVar.add_field(name="Gender:", value="TEST", inline=False)
@@ -177,8 +178,8 @@ async def _view(ctx, idinput=''):
 
         charListStr = ''
 
-async def _getChar(charID):
 
+async def _getChar(charID):
     cursor = conn.cursor()
 
     cursor.execute(f"SELECT * FROM charlist WHERE charID IS {charID}")
