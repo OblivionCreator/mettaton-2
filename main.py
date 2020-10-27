@@ -1,13 +1,14 @@
 import math
-
+import random
 import discord
-from discord import guild
+from discord import guild, File
 from discord.ext import commands
 import sqlite3
 from sqlite3 import Error
 from collections.abc import Sequence
 import ast
 from dataclasses import dataclass
+import time
 
 intents = discord.Intents.default()
 intents.members = True
@@ -48,7 +49,8 @@ async def globally_block_dms(ctx):
     return ctx.guild is not None
 
 
-async def charadd(owner, name, age='', abil='', appear='', backg='', person='', prefilled='', status='Pending'):
+async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
+                  status='Pending'):
     character = (owner, status, name, age, abil, appear, backg, person, prefilled)
 
     """
@@ -57,7 +59,7 @@ async def charadd(owner, name, age='', abil='', appear='', backg='', person='', 
     :return: charID
     """
 
-    sql = '''INSERT INTO charlist(owner,status,name,age,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?)'''
+    sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?)'''
     cur = conn.cursor()
     cur.execute(sql, character)
     conn.commit()
@@ -106,22 +108,68 @@ async def test(ctx):
 @bot.command()
 @commands.cooldown(1, 3600, commands.BucketType.guild)
 async def sans(ctx):
-    await ctx.send("░░░░░░░░██████████████████\n"
-                   "░░░░████░░░░░░░░░░░░░░░░░░████\n"
-                   "░░██░░░░░░░░░░░░░░░░░░░░░░░░░░██\n"
-                   "░░██░░░░░░░░░░░░░░░░░░░░░░░░░░██\n"
-                   "██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██\n"
-                   "██░░░░░░░░░░░░░░░░░░░░██████░░░░██\n"
-                   "██░░░░░░░░░░░░░░░░░░░░██████░░░░██\n"
-                   "██░░░░██████░░░░██░░░░██████░░░░██\n"
-                   "░░██░░░░░░░░░░██████░░░░░░░░░░██\n"
-                   "████░░██░░░░░░░░░░░░░░░░░░██░░████\n"
-                   "██░░░░██████████████████████░░░░██\n"
-                   "██░░░░░░██░░██░░██░░██░░██░░░░░░██\n"
-                   "░░████░░░░██████████████░░░░████\n"
-                   "░░░░░░████░░░░░░░░░░░░░░████\n"
-                   "░░░░░░░░░░██████████████\n \n"
-                   "Thanks to Reddit User /u/SuperKirbylover for the Sans ASCII")
+    if random.randint(0, 100) <= 10:
+        await ctx.send("░░░░░░░░░░░░░░░░░░░░░░░░██████████\n"
+                       "░░░░░░░░░░░░░░░░░░░░████░░░░░░░░░░██\n"
+                       "░░░░░░░░░░░░░░░░░░██░░░░░░░░░░░░░░░░██\n"
+                       "░░░░░░░░░░░░░░░░██░░░░░░░░░░░░░░░░░░██\n"
+                       "░░░░░░░░░░░░░░░░██░░░░░░░░░░░░██░░░░████\n"
+                       "░░░░░░░░░░░░░░░░██░░░░░░░░██████░░██░░██\n"
+                       "░░░░░░░░░░░░░░░░██░░░░██░░░░░░░░░░░░░░██\n"
+                       "░░░░░░░░░░░░░░░░░░██░░░░██████░░░░██████\n"
+                       "░░░░░░░░░░░░░░░░░░██░░░░░░░░░░░░██░░████\n"
+                       "░░░░░░░░░░░░░░██████░░██░░░░░░░░░░░░██\n"
+                       "░░░░░░░░██████░░░░░░██░░██████████████\n"
+                       "██░░░░██░░░░██████████░░████░░██░░████████\n"
+                       "██████░░░░██░░░░░░██░░██░░██░░██░░████░░░░██\n"
+                       "██░░░░░░██░░░░░░░░░░██░░██░░████░░████░░░░░░██\n"
+                       "██░░░░░░██░░░░░░░░░░██░░░░██░░░░██░░██░░░░░░██\n"
+                       "░░██░░░░████████░░░░░░██░░░░████████████░░██░░██\n"
+                       "░░░░██░░██░░░░░░████░░░░██████░░░░░░██░░██░░██\n"
+                       "░░░░░░██████████░░██░░░░░░██░░░░░░██░░██░░████\n"
+                       "░░░░░░░░░░████████░░░░░░██░░████████░░██████████\n"
+                       "░░░░░░░░░░████░░██░░░░░░██████░░░░████████████████\n"
+                       "░░░░░░░░████░░░░████░░░░░░░░░░░░░░░░░░██░░██████\n"
+                       "░░░░░░░░████████░░██████░░░░░░░░░░░░██\n"
+                       "░░░░░░░░░░████░░░░██░░████████████████\n"
+                       "░░░░░░░░░░░░██░░██░░░░░░░░░░██░░██░░██\n"
+                       "░░░░░░░░░░░░░░██████░░░░░░██████████\n"
+                       "░░░░░░░░░░░░░░░░░░████░░░░██████\n"
+                       "░░░░░░░░░░░░░░░░░░██░░░░██████████\n"
+                       "░░░░░░░░░░░░░░░░░░░░████░░██████░░██\n"
+                       "░░░░░░░░░░░░░░░░░░░░██░░██░░░░░░████\n"
+                       "░░░░░░░░░░░░░░░░░░░░██░░░░██████░░██\n"
+                       "░░░░░░░░░░░░░░░░░░░░░░████░░░░░░██\n"
+                       "░░░░░░░░░░░░░░░░░░░░░░████████████\n"
+                       "░░░░░░░░░░░░░░░░░░░░██████░░░░████\n"
+                       "░░░░░░░░░░░░░░░░░░░░████░░░░████████\n"
+                       "░░░░░░░░░░░░░░░░░░██████░░░░██░░░░██\n"
+                       "░░░░░░░░░░░░░░░░██░░░░██░░░░████████\n"
+                       "░░░░░░░░░░░░░░░░████████░░░░██░░░░██\n"
+                       "░░░░░░░░░░░░░░░░████░░██░░░░████████\n"
+                       "░░░░░░░░░░░░████░░░░████░░░░██░░░░██████\n"
+                       "░░░░░░░░░░██░░░░░░░░░░██░░░░██░░██░░░░░░██\n"
+                       "░░░░░░░░░░██░░░░░░░░████░░░░██░░░░░░░░░░██\n"
+                       "░░░░░░░░░░████████████░░░░░░░░████████████\n\n"
+                       "YOU EXPECTED SANS, BUT IT WAS ME! THE GREAT PAPYRUS!\n"
+                       "(Papyrus ASCII by u/SuperKirbylover)")
+    else:
+        await ctx.send("░░░░░░░░██████████████████░░░░░░░░\n"
+                       "░░░░████░░░░░░░░░░░░░░░░░░████░░░░\n"
+                       "░░██░░░░░░░░░░░░░░░░░░░░░░░░░░██░░\n"
+                       "░░██░░░░░░░░░░░░░░░░░░░░░░░░░░██░░\n"
+                       "██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██\n"
+                       "██░░░░░░░░░░░░░░░░░░░░██████░░░░██\n"
+                       "██░░░░░░░░░░░░░░░░░░░░██████░░░░██\n"
+                       "██░░░░██████░░░░██░░░░██████░░░░██\n"
+                       "░░██░░░░░░░░░░██████░░░░░░░░░░██░░\n"
+                       "████░░██░░░░░░░░░░░░░░░░░░██░░████\n"
+                       "██░░░░██████████████████████░░░░██\n"
+                       "██░░░░░░██░░██░░██░░██░░██░░░░░░██\n"
+                       "░░████░░░░██████████████░░░░████░░\n"
+                       "░░░░░░████░░░░░░░░░░░░░░████░░░░░░\n"
+                       "░░░░░░░░░░██████████████░░░░░░░░░░\n \n"
+                       "(Papyrus ASCII by u/SuperKirbylover)")
 
 
 @bot.command()
@@ -155,37 +203,109 @@ async def register(ctx):
     await _registerChar(ctx, user)
 
 
+def getMember(owner, ctx):
+    member = ctx.message.guild.get_member(int(owner))
+    return member
+
+
+def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, person, prefilled, ctx):
+    curTime = int(time.time())
+
+    path = f"charoverflow/{curTime}-{charID}.txt"
+
+    charFile = open(path, 'x')
+
+    charTXT = (f"Character Information for Character ID {charID}\n" \
+               f"Owner: {getMember(owner, ctx) or owner + ' (Owner has left server.)'}\n" \
+               f"Status: {status}\n" \
+               f"Name: {name}\n")
+    if age != '': charTXT = charTXT + f"Age: {age}\n"
+    if gender != '': charTXT = charTXT + f"Gender: {gender}\n"
+    if abil != '': charTXT = charTXT + f"Abilities/Tools: {abil}\n"
+    if appear != '': charTXT = charTXT + f"Appearance: {appear}\n"
+    if backg != '': charTXT = charTXT + f"Background: {backg}\n"
+    if person != '': charTXT = charTXT + f"Personality: {person}\n"
+    if prefilled != '': charTXT = charTXT + f"Prefilled: {prefilled}\n"
+
+    charFile.write(charTXT)
+
+    charFile.close()
+    return path
+
+
 @bot.command(name='view', aliases=['cm', 'charmanage', 'samwhy'])
 async def _view(ctx, idinput=''):
-    if not idinput.isnumeric():
+    if not idinput.isnumeric() or int(idinput) == 0:
         await ctx.send("That is not a valid character ID!")
     else:
         sanID = int(idinput)
 
         charData = await _getChar(sanID)
 
+        if charData == 'INVALID CHARACTER':
+            await ctx.send("That is not a valid character!")
+            return
+
         print(charData)
 
+        owner, = charData[1:2]
+        status, = charData[2:3]
         name, = charData[3:4]
+        age, = charData[4:5]
+        gender, = charData[5:6]
+        abil, = charData[6:7]
+        appear, = charData[7:8]
+        backg, = charData[8:9]
+        person, = charData[9:10]
+        prefilled, = charData[-1:]
+
+        print(prefilled)
+
+        member = ctx.message.guild.get_member(int(owner))
 
         embedVar = discord.Embed(title=f"Viewing Character {sanID}",
-                                 description=f"Character Information for ID: {sanID}", color=0xff0000)
+                                 description=f"Showing Information for Character ID: {sanID}", color=0xff0000)
+        embedVar.add_field(name="Owner:", value=f"{member or (owner) + ' (User has left the server.)'}", inline=True)
+        embedVar.add_field(name="Status:", value=status, inline=False)
         embedVar.add_field(name="Name:", value=name, inline=True)
-        embedVar.add_field(name="Age:", value="TEST", inline=False)
-        embedVar.add_field(name="Gender:", value="TEST", inline=False)
-        embedVar.add_field(name="Other fields:", value="TEST", inline=False)
-        await ctx.send(embed=embedVar)
+        if age != '': embedVar.add_field(name="Age:", value=age, inline=False)
+        if gender != '': embedVar.add_field(name="Gender:", value=gender, inline=False)
+        if abil != '': embedVar.add_field(name="Abilities/Tools:", value=abil, inline=False)
+        if appear != '': embedVar.add_field(name="Appearance:", value=appear, inline=False)
+        if backg != '': embedVar.add_field(name="Background:", value=backg, inline=False)
+        if person != '': embedVar.add_field(name="Personality:", value=person, inline=False)
+        if prefilled != '': embedVar.add_field(name="Prefilled Application:", value=prefilled, inline=False)
+        try:
+            await ctx.send(embed=embedVar)
+        except:
+            await ctx.send(f"This character was too too long, so I have dumped it to a file.")
+            filePath = charToTxt(charID=sanID, owner=owner, status=status, name=name, age=age, gender=gender, abil=abil,
+                                 appear=appear, backg=backg, person=person, prefilled=prefilled, ctx=ctx)
 
-        charListStr = ''
+            charFile = open(filePath, 'r')
+            await ctx.send(file=discord.File(filePath))
 
 
 async def _getChar(charID):
     cursor = conn.cursor()
 
-    cursor.execute(f"SELECT * FROM charlist WHERE charID IS {charID}")
+    cursor.execute(f"SELECT count(*) FROM charlist")
+    count = cursor.fetchone()[0]
 
+    charInvalid = 'INVALID CHARACTER'
+
+    if charID > count:
+        return charInvalid
+
+    cursor.execute(f"SELECT * FROM charlist WHERE charID IS {charID}")
     charInfo = cursor.fetchone()
-    print(charInfo)
+
+    checkStatus, = charInfo[2:3]
+    print(checkStatus)
+
+    if checkStatus == 'Disabled':
+        print("Invalid Character")
+        return charInvalid
 
     return charInfo
 
@@ -337,6 +457,7 @@ async def _registerChar(ctx, user):
 
                         await user.send("Character has been submitted with ID: " + str(
                             await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
+                                          gender=cfields["gender"],
                                           abil=cfields["abilities/tools"],
                                           appear=cfields["appearance"], backg=cfields["background"],
                                           person=cfields["personality"],
