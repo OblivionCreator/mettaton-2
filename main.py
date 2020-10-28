@@ -169,7 +169,7 @@ async def sans(ctx):
                        "░░████░░░░██████████████░░░░████░░\n"
                        "░░░░░░████░░░░░░░░░░░░░░████░░░░░░\n"
                        "░░░░░░░░░░██████████████░░░░░░░░░░\n \n"
-                       "(Papyrus ASCII by u/SuperKirbylover)")
+                       "(Sans ASCII by u/SuperKirbylover)")
 
 
 @bot.command()
@@ -334,18 +334,60 @@ class CharacterListItem:
     owner: str
 
 
+async def getUserChars(ctx, userID, pageSize, pageID):
+    pageNo = int(pageID - 1)
+
+    print(pageNo)
+
+    cursor = conn.cursor()
+
+    userInt = int(userID)
+
+    cursor.execute(f"SELECT count(*) FROM charlist WHERE status IS NOT 'Disabled' AND owner IS {userID}")
+
+    count = cursor.fetchone()[0]
+
+    print(count)
+
+    cursor.execute(
+        f"SELECT charID, name, owner FROM charlist WHERE status IS NOT 'Disabled' AND owner IS {userInt} ORDER BY charID LIMIT {pageSize} OFFSET {pageNo * pageSize}")
+
+    charList = [CharacterListItem(charID, name, owner) for charID, name, owner in cursor]
+
+    charListStr = ''
+
+    for i in charList:
+        member = ctx.message.guild.get_member(int(i.owner))
+        charListStr = f"{charListStr}**`{i.id}.`** {i.name[0:75]} (Owner: {member or i.owner})\n"
+
+    await ctx.send(
+        f"List of characters belonging to {member or userID + ' (User has left server)'} (Page: {pageNo + 1} of {math.ceil(count / pageSize)})\n{charListStr}")
+
+
 @bot.command(name='list')
-async def _list(ctx, page=''):
-    if not page.isnumeric():
-        pageNo = 0
+async def _list(ctx, pageIdentifier='', page=''):
+    pageSize = 15
+    if not pageIdentifier.isnumeric():
+        if page.isnumeric():
+            pageID = int(page)
+        else:
+            pageID = 1
+        if pageIdentifier == '':
+            pageID = 0
+        elif pageIdentifier == 'me':
+            await getUserChars(ctx, ctx.author.id, pageSize, pageID=pageID)
+            return
+        elif ctx.message.mentions[0].id:
+            await getUserChars(ctx, ctx.message.mentions[0].id, pageSize, pageID=pageID)
+            return
+        else:
+            pageNo = 0
     else:
-        pageNo = (int(page) - 1)
+        pageNo = (int(pageIdentifier) - 1)
 
     cursor = conn.cursor()
 
     #  Gets the Character IDs from the Database
-
-    pageSize = 15
 
     cursor.execute(f"SELECT count(*) FROM charlist WHERE status IS NOT 'Disabled'")
     count = cursor.fetchone()[0]
