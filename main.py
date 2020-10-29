@@ -1,4 +1,6 @@
+import glob
 import math
+import os
 import random
 import discord
 from discord import guild, File
@@ -9,6 +11,8 @@ from collections.abc import Sequence
 import ast
 from dataclasses import dataclass
 import time
+
+from discord.ext.commands import has_permissions
 
 intents = discord.Intents.default()
 intents.members = True
@@ -28,6 +32,13 @@ def create_connection(db_file):
         print("Connection Failed! - " + e)
 
     return conn
+
+
+def clearLog(): # Deletes all files in charoverflow.
+    files = glob.glob('charoverflow/*')
+    for f in files:
+        print(f)
+        os.remove(f)
 
 
 file = open("token.txt")
@@ -284,6 +295,8 @@ async def _view(ctx, idinput=''):
 
             charFile = open(filePath, 'r')
             await ctx.send(file=discord.File(filePath))
+            charFile.close()
+            clearLog()
 
 
 async def _getChar(charID):
@@ -367,12 +380,14 @@ async def getUserChars(ctx, userID, pageSize, pageID):
 @bot.command(name='list')
 async def _list(ctx, pageIdentifier='', page=''):
     pageSize = 15
-    if not pageIdentifier.isnumeric():
+    if pageIdentifier.isnumeric():
+        pageNo = int(pageIdentifier)-1
+    else:
         if page.isnumeric():
             pageID = int(page)
         else:
             pageID = 1
-        if pageIdentifier == '':
+        if pageIdentifier == '' or None:
             pageID = 0
         elif pageIdentifier == 'me':
             await getUserChars(ctx, ctx.author.id, pageSize, pageID=pageID)
@@ -382,12 +397,12 @@ async def _list(ctx, pageIdentifier='', page=''):
             return
         else:
             pageNo = 0
-    else:
-        pageNo = (int(pageIdentifier) - 1)
 
     cursor = conn.cursor()
-
     #  Gets the Character IDs from the Database
+
+    if 'pageNo' not in locals():
+        pageNo = 0
 
     cursor.execute(f"SELECT count(*) FROM charlist WHERE status IS NOT 'Disabled'")
     count = cursor.fetchone()[0]
@@ -413,8 +428,42 @@ async def _search(ctx):
 
 
 @bot.command(name='delete')
-async def _delete(ctx):
-    pass
+async def _delete(ctx, charDel='', confirmation=''):
+    if charDel.isnumeric():
+        if confirmation.lower() == 'confirm':
+            await _deleteChar(ctx, int(charDel))
+            return
+        else:
+            await ctx.send("Are you sure you wish to delete this character? Please type `confirm` if you are sure.")
+            response = await bot.wait_for("message", check=message_check())
+            if response.content.lower() == 'confirm':
+                await _deleteChar(ctx, int(charDel))
+                return
+    else:
+        await ctx.send("Invalid Character ID!")
+
+
+async def _deleteChar(ctx, charID):
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT owner FROM charlist WHERE charID IS {charID} AND status IS NOT 'Disabled'")
+
+    owner = cursor.fetchone()
+
+    if owner is None:
+        await ctx.send("That character does not exist!")
+        return
+    else:
+        ownerP = owner[0]
+        print(ownerP)
+
+    role_names = role_names = [role.name for role in ctx.author.roles]
+
+    if ctx.author.id == int(ownerP) or 'Gamemaster' in role_names:
+        cursor.execute(f"UPDATE charlist SET status = 'Disabled' WHERE charID is {charID}")
+        conn.commit()
+        await ctx.send(f"Character {charID} has been deleted.")
+    else:
+        await ctx.send("You do not own this character!")
 
 
 async def getdm(ctx):
