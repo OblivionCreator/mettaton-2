@@ -19,7 +19,7 @@ intents.members = True
 
 bot = commands.Bot(
     command_prefix=['rp!', 'sans!', 'mtt!', 'arik ', 'bliv pls ', 'bliv ', 'https://en.wikipedia.org/wiki/Insanity '],
-    intents=intents)
+    intents=intents, case_insensitive=True)
 currentlyRegistering = []
 
 
@@ -62,7 +62,7 @@ async def globally_block_dms(ctx):
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
                   status='Pending'):
-    character = (owner, status, name, age, abil, appear, backg, person, prefilled)
+    character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled)
 
     """
     :param conn:
@@ -70,13 +70,31 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
     :return: charID
     """
 
-    sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?)'''
+    sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?,?)'''
     cur = conn.cursor()
     cur.execute(sql, character)
     conn.commit()
 
     print(cur.lastrowid)
     return cur.lastrowid
+
+async def charModify(field, fieldData):
+    
+    """
+    :param conn:
+    :param field: 
+    :param fieldData: 
+    :return:
+    """
+
+
+
+    sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?,?)'''
+
+
+
+    cur = conn.cursor()
+    cur.execute(sql, )
 
 
 def make_sequence(seq):
@@ -329,14 +347,15 @@ async def fuckoffloki(ctx):
     await ctx.author.kick()
 
 
-@bot.command(name='set')
-async def _set(ctx):
-    pass
+@bot.command(name='set', aliases=['setprop'])
+async def _set(ctx, charID, *args):
+    await ctx.send(f"{charID}, {args}")
 
 
-@bot.command(name='setprop')
-async def _setprop(ctx):
-    pass
+
+#@bot.command(name='setprop')
+#async def _setprop(ctx):
+#    pass
 
 
 @dataclass
@@ -443,6 +462,18 @@ async def _delete(ctx, charDel='', confirmation=''):
         await ctx.send("Invalid Character ID!")
 
 
+def charPermissionCheck(ctx, ownerID):
+
+    role_names = role_names = [role.name for role in ctx.author.roles]
+
+    authorID = ctx.author.id
+
+    if ownerID == authorID or "Gamemaster" in role_names:
+        return True
+    else:
+        return False
+
+
 async def _deleteChar(ctx, charID):
     cursor = conn.cursor()
     cursor.execute(f"SELECT owner FROM charlist WHERE charID IS {charID} AND status IS NOT 'Disabled'")
@@ -456,9 +487,7 @@ async def _deleteChar(ctx, charID):
         ownerP = owner[0]
         print(ownerP)
 
-    role_names = role_names = [role.name for role in ctx.author.roles]
-
-    if ctx.author.id == int(ownerP) or 'Gamemaster' in role_names:
+    if charPermissionCheck(ctx, ownerID=ownerP) is True:
         cursor.execute(f"UPDATE charlist SET status = 'Disabled' WHERE charID is {charID}")
         conn.commit()
         await ctx.send(f"Character {charID} has been deleted.")
