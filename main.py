@@ -34,7 +34,7 @@ def create_connection(db_file):
     return conn
 
 
-def clearLog(): # Deletes all files in charoverflow.
+def clearLog():  # Deletes all files in charoverflow.
     files = glob.glob('charoverflow/*')
     for f in files:
         print(f)
@@ -61,7 +61,7 @@ async def globally_block_dms(ctx):
 
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
-                  status='Pending'):
+                  status='Pending', charID=''):
     character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled)
 
     """
@@ -70,28 +70,34 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
     :return: charID
     """
 
-    sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?,?)'''
-    cur = conn.cursor()
-    cur.execute(sql, character)
-    conn.commit()
 
-    print(cur.lastrowid)
-    return cur.lastrowid
+    if charID == '':
+        sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?,?)'''
+        cur = conn.cursor()
+        cur.execute(sql, character)
+        conn.commit()
+        print(cur.lastrowid)
+        return cur.lastrowid
+    else:
+
+        charwid = character + (int(charID),)
+        sql = '''UPDATE charlist SET owner=?,status=?,name=?,age=?,gender=?,abil=?,appear=?,backg=?,person=?,prefilled=? WHERE charID=?'''
+        cur = conn.cursor()
+        cur.execute(sql, charwid)
+        conn.commit()
+        print(cur.lastrowid)
+        return cur.lastrowid
+
 
 async def charModify(field, fieldData):
-    
     """
     :param conn:
-    :param field: 
-    :param fieldData: 
+    :param field:
+    :param fieldData:
     :return:
     """
 
-
-
     sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?,?)'''
-
-
 
     cur = conn.cursor()
     cur.execute(sql, )
@@ -206,17 +212,108 @@ async def papyrus(ctx):
     await ctx.send("Nice Try, <@" + str(ctx.author.id) + ">")
 
 
-@bot.command(pass_context=True)
-async def register(ctx):
+async def reRegister(ctx, charID):
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT owner FROM charlist WHERE charID IS {charID} AND status IS NOT 'Disabled'")
+
+    owner = cursor.fetchone()
+
+    if owner is None:
+        await ctx.send("That character does not exist!")
+        return
+    else:
+        ownerP = owner[0]
+
+    if int(ownerP) != ctx.author.id:
+        print(ownerP)
+        await ctx.send("You do not own this character!")
+        return
+
+    charData = await _getChar(int(charID))
+
+    if charData == 'INVALID CHARACTER':
+        ctx.send("That is not a valid character!")
+
+    cfields = {
+        "name": None,
+        "gender": None,
+        "age": None,
+        "abilities/tools": None,
+        "appearance": None,
+        "background": None,
+        "personality": None,
+        "prefilled": None,
+    }
+
+    owner, = charData[1:2]
+    status, = charData[2:3]
+    cfields['name'], = charData[3:4]
+    cfields['age'], = charData[4:5]
+    cfields['gender'], = charData[5:6]
+    cfields['abilities/tools'], = charData[6:7]
+    cfields['appearance'], = charData[7:8]
+    cfields['background'], = charData[8:9]
+    cfields['personality'], = charData[9:10]
+    cfields['prefilled'], = charData[-1:]
+
+    embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
+    try:
+        await ctx.author.send("Here is your character currently.", embed=embedV)
+    except:
+        filePath = charToTxt(charID=charID, owner=owner, status=status, name=cfields['name'], age=cfields['age'], gender=cfields['gender'], abil=cfields['abilities/tools'],
+                             appear=cfields['appearance'], backg=cfields['background'], person=cfields['personality'], prefilled=cfields['prefilled'], ctx=ctx)
+        charFile = open(filePath, 'r')
+        ctx.author.send("Here is your character currently.", file=discord.File(filePath))
+        charFile.close()
+        clearLog()
+
+
+    blankList = []
+    blankFields = ''
+
+    for i in cfields:
+        temp = cfields.get(i)
+        if temp == '':
+            blankList.append(i)
+
+    for i in blankList:
+        blankFields = f"{blankFields} `{i.capitalize()}`,"
+    await ctx.author.send(
+        f"What field would you like to modify?\n You can also add one of the following fields that are not currently present within your application:\n" + blankFields)
+
+    registerLoop = True
+
+    while (registerLoop):
+        field = await getdm(ctx)
+        registerLoop = False
+
+    resub = await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
+                  gender=cfields["gender"],
+                  abil=cfields["abilities/tools"],
+                  appear=cfields["appearance"], backg=cfields["background"],
+                  person=cfields["personality"],
+                  prefilled=cfields["prefilled"], charID=charID)
+
+    await ctx.author.send(f"Character {charID} has been resubmitted.")
+
+
+@bot.command(pass_context=True, aliases=['reregister', 'submit', 'resubmit'])
+async def register(ctx, charID=''):
     if ctx.author.id in currentlyRegistering:
         await ctx.send("You are already registering a character!")
         return
-    else:
-        await ctx.send(
-            ":mailbox_with_mail: Please check your DMs!")
-        currentlyRegistering.append(ctx.author.id)
-        for word in currentlyRegistering:
-            print(word)
+
+    currentlyRegistering.append(ctx.author.id)
+
+    await ctx.send(":mailbox_with_mail: Please check your DMs!")
+    for word in currentlyRegistering:
+        print(word)
+
+    if charID.isnumeric():
+        await reRegister(ctx, charID)
+        currentlyRegistering.remove(ctx.author.id)
+        return
+
 
     print("DEBUG: REGISTER COMMAND FROM USER ID: ", ctx.author.id, " - ", ctx.author)
     user = ctx.author
@@ -263,7 +360,7 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
 
 
 @bot.command(name='view', aliases=['cm', 'charmanage', 'samwhy'])
-async def _view(ctx, idinput=''):
+async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
     if not idinput.isnumeric() or int(idinput) == 0:
         await ctx.send("That is not a valid character ID!")
     else:
@@ -304,18 +401,30 @@ async def _view(ctx, idinput=''):
         if backg != '': embedVar.add_field(name="Background:", value=backg, inline=False)
         if person != '': embedVar.add_field(name="Personality:", value=person, inline=False)
         if prefilled != '': embedVar.add_field(name="Prefilled Application:", value=prefilled, inline=False)
+
+        if returnEmbed is True:
+            return embedVar
+
         try:
-            await ctx.send(embed=embedVar)
+            if (dmchannel is False):
+                await ctx.send(embed=embedVar)
+            else:
+                await ctx.author.send(embed=embedVar)
         except:
-            await ctx.send(f"This character was too too long, so I have dumped it to a file.")
+            if (dmchannel is False):
+                await ctx.send(f"This character was too too long, so I have dumped it to a file.")
+            else:
+                ctx.author.send(f"This character was too too long, so I have dumped it to a file.")
             filePath = charToTxt(charID=sanID, owner=owner, status=status, name=name, age=age, gender=gender, abil=abil,
                                  appear=appear, backg=backg, person=person, prefilled=prefilled, ctx=ctx)
 
             charFile = open(filePath, 'r')
-            await ctx.send(file=discord.File(filePath))
+            if dmchannel is False:
+                await ctx.send(file=discord.File(filePath))
+            else:
+                ctx.author.send(file=discord.File(filePath))
             charFile.close()
             clearLog()
-
 
 async def _getChar(charID):
     cursor = conn.cursor()
@@ -352,9 +461,8 @@ async def _set(ctx, charID, *args):
     await ctx.send(f"{charID}, {args}")
 
 
-
-#@bot.command(name='setprop')
-#async def _setprop(ctx):
+# @bot.command(name='setprop')
+# async def _setprop(ctx):
 #    pass
 
 
@@ -400,7 +508,7 @@ async def getUserChars(ctx, userID, pageSize, pageID):
 async def _list(ctx, pageIdentifier='', page=''):
     pageSize = 15
     if pageIdentifier.isnumeric():
-        pageNo = int(pageIdentifier)-1
+        pageNo = int(pageIdentifier) - 1
     else:
         if page.isnumeric():
             pageID = int(page)
@@ -463,7 +571,6 @@ async def _delete(ctx, charDel='', confirmation=''):
 
 
 def charPermissionCheck(ctx, ownerID):
-
     role_names = role_names = [role.name for role in ctx.author.roles]
 
     authorID = ctx.author.id
@@ -508,6 +615,30 @@ async def getdm(ctx):
     return finalResponse
 
 
+def previewChar(cfields=None, prefilled=None, name=None):
+    embedVar = discord.Embed(title=f"Previewing Your Character",
+                             description=f"Showing Preview for Character", color=0xffD800)
+
+    if cfields is not None:
+        embedVar.add_field(name="Name:", value=cfields['name'], inline=True)
+        if cfields['age'] != '': embedVar.add_field(name="Age:", value=cfields['age'], inline=False)
+        if cfields['gender'] != '': embedVar.add_field(name="Gender:", value=cfields['gender'], inline=False)
+        if cfields['abilities/tools'] != '': embedVar.add_field(name="Abilities/Tools:",
+                                                                value=cfields['abilities/tools'], inline=False)
+        if cfields['appearance'] != '': embedVar.add_field(name="Appearance:", value=cfields['appearance'],
+                                                           inline=False)
+        if cfields['background'] != '': embedVar.add_field(name="Background:", value=cfields['background'],
+                                                           inline=False)
+        if cfields['personality'] != '': embedVar.add_field(name="Personality:", value=cfields['personality'],
+                                                            inline=False)
+
+    if prefilled:
+        embedVar.add_field(name="Name:", value=name, inline=False)
+        embedVar.add_field(name="Prefilled Application:", value=prefilled, inline=False)
+
+    return embedVar
+
+
 async def _registerChar(ctx, user):
     isRegistering = True
 
@@ -550,6 +681,7 @@ async def _registerChar(ctx, user):
             if response.lower() in canonDeny:
                 await user.send(
                     "**Reminder! Canon Characters are not allowed. Please read the <#697160109700284456> and <#697153009599119493>**")
+                cfields["name"] = f"{response} - CANON CHARACTER"
 
             await user.send("Now that your character has a name, let's start filling out some details.\n"
                             "What field would you like to edit?\n"
@@ -583,12 +715,18 @@ async def _registerChar(ctx, user):
                                           person=cfields["personality"],
                                           prefilled=prefilled)))
                         currentlyRegistering.remove(user.id)
+                        return
                 elif response.lower() == 'exit':
                     await user.send(
                         "Exiting Character Creation!")
                     isRegistering = False
                     currentlyRegistering.remove(user.id);
                     return
+                elif response.lower() == 'preview':
+                    try:
+                        await user.send(embed=previewChar(cfields=cfields))
+                    except:
+                        await user.send("This character is too long to preview!")
                 elif selector in cfields:
                     await user.send("What would you like field `" + selector.capitalize() + "` to say?")
                     response = await getdm(ctx)
@@ -656,25 +794,32 @@ async def _registerChar(ctx, user):
             if prefilled.lower() == 'exit': await user.send(
                 "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(user.id); return
 
-            validcommands = ["prefilled application", "name"]
+            charFields = ["prefilled application", "name"]
 
             while not charcomplete:
                 await user.send(
-                    "Your character is ready to submit. If you wish to change any fields, please state what you would like to change. If you would like to submit your character, enter `Done`\n"
+                    "Your character is ready to submit. If you wish to change any fields, please state what you would like to change. If you would like to submit your character, enter `Done` or to preview your character, enter `Preview`\n"
                     "Fields: `Name`, `Prefilled Application`")
                 response = await getdm(ctx)
                 selector = response.lower()
                 if selector == 'exit': await user.send(
                     "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(user.id); return
 
-                if selector not in validcommands:
+                if selector not in charFields:
                     if selector == 'done':
                         await user.send("Great! Your character has been submitted with ID: **" + str(
                             await charadd(owner=ctx.author.id, name=name, prefilled=prefilled)) + "**")
                         currentlyRegistering.remove(user.id)
                         charcomplete = True
                         return
-                    await user.send("That is not a valid field! Please try again.")
+                    elif selector == 'preview':
+                        try:
+                            await user.send(embed=previewChar(prefilled=prefilled, name=name))
+                        except:
+                            await user.send("This character is too long to preview!")
+
+                    else:
+                        await user.send("That is not a valid field! Please try again.")
                 elif selector == 'name':
                     await user.send("What would you like the name to be?")
                     response = await getdm(ctx)
@@ -682,7 +827,7 @@ async def _registerChar(ctx, user):
                         "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(
                         user.id); return
                     name = response
-                    await user.send("Your Characters name has been set to **" + name + "**")
+                    await user.send("Your Characters name has been set.")
 
                 else:
                     await user.send(
@@ -714,6 +859,16 @@ def insert_returns(body):
     # for with blocks, again we insert returns into the body
     if isinstance(body[-1], ast.With):
         insert_returns(body[-1].body)
+
+
+@bot.command(name='testspam')
+@commands.is_owner()
+async def _spamChars(ctx):
+    i = 0
+    while i <= 1000:
+        await charadd(owner=110399543039774720, name='SPAMTEST', age='SPAMTEST', gender='SPAMTEST', abil='SPAMTEST',
+                      appear='SPAMTEST', backg='SPAMTEST', person='SPAMTEST', status='TESTING STATUS')
+        i = i + 1
 
 
 @bot.command(name='eval')
