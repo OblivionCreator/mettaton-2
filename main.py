@@ -3,7 +3,6 @@ import math
 import os
 import random
 import discord
-from discord import guild, File
 from discord.ext import commands
 import sqlite3
 from sqlite3 import Error
@@ -11,16 +10,36 @@ from collections.abc import Sequence
 import ast
 from dataclasses import dataclass
 import time
-
-from discord.ext.commands import has_permissions
+import json
 
 intents = discord.Intents.default()
 intents.members = True
 
 bot = commands.Bot(
-    command_prefix=['rp!', 'sans!', 'mtt!', 'arik ', 'bliv pls ', 'bliv ', 'https://en.wikipedia.org/wiki/Insanity '],
+    command_prefix=['rp!', 'sans!', 'mtt!', 'arik ', 'bliv pls ', 'bliv ', 'https://en.wikipedia.org/wiki/Insanity ', 'Rp!'],
     intents=intents, case_insensitive=True)
 currentlyRegistering = []
+
+
+def GMChannel():
+    with open('.config') as file:
+        GMChannel = int(file.read())
+        return GMChannel
+
+
+@bot.event
+async def on_ready():
+    with open('.config') as file:
+        GMChannel = int(file.read())
+        clearLog()
+        try:
+            await (bot.get_channel(GMChannel)).send("Mettaton 2.0.5 Loaded!")
+
+        except:
+            print(GMChannel)
+            print("GMChannel is invalid!")
+
+        file.close()
 
 
 def create_connection(db_file):
@@ -69,7 +88,6 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
     :param character:
     :return: charID
     """
-
 
     if charID == '':
         sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?,?)'''
@@ -138,6 +156,20 @@ def message_check(channel=None, author=None, content=None, ignore_bot=True, lowe
 async def test(ctx):
     print("TEST")
     pass
+
+
+@bot.command(name='setGMChannel')
+async def _setGMCChannel(ctx):
+    role_names = [role.name for role in ctx.author.roles]
+
+    if "Gamemaster" not in role_names:
+        await ctx.send("You do not have permission to change the GM Channel!")
+        return
+    with open('.config', 'w') as outfile:
+        outfile.write(str(ctx.message.channel.id))
+        outfile.close()
+
+    await ctx.send("Successfully set GM Channel!")
 
 
 @bot.command()
@@ -211,6 +243,63 @@ async def sans(ctx):
 async def papyrus(ctx):
     await ctx.send("Nice Try, <@" + str(ctx.author.id) + ">")
 
+async def checkGM(ctx):
+    role_names = [role.name for role in ctx.author.roles]
+
+    if "Gamemaster" not in role_names:
+        return False
+    else:
+        return True
+
+async def alertUser(ctx, charID, status, reason):
+
+    charData = _getChar(charID)
+
+    ownerID, = charData[1:2]
+    name, = charData[3:4]
+
+    print('debug')
+
+    user = ctx.guild.get_member(int(ownerID))
+    await user.send(f"The status of character ID **{charID}** (Name: **{name}**) has been set to `{status}` by {ctx.author.mention}")
+
+
+async def _changeStatus(ctx, charID='',charStatus='Pending' ,*args):
+    if not await checkGM(ctx):
+        await ctx.send("You do not have permission to do this!")
+        return
+
+    try:
+        if charID.isnumeric():
+            charInt = int(charID)
+        else:
+            await ctx.send("That is not a valid character ID!")
+            return
+    except:
+        charInt = charID
+
+    reason = ' '.join(args)
+
+    cursor = conn.cursor()
+    sql = '''UPDATE charlist SET status = 'Approved' WHERE charID is ?'''
+    cursor.execute(sql, [charID])
+    conn.commit()
+    await alertUser(ctx, charInt, status, reason)
+    await ctx.send(f"Character `ID: {charID}` has been set to `Approved`")
+
+@bot.command()
+async def approve(ctx,charID):
+    await _changeStatus(ctx, charID=charID, charStatus='Approved', *args)
+
+@bot.command()
+async def deny(ctx, charID):
+    pass
+
+
+@bot.command()
+async def pending(ctx, charID):
+    pass
+
 
 async def reRegister(ctx, charID):
     cursor = conn.cursor()
@@ -229,20 +318,20 @@ async def reRegister(ctx, charID):
         await ctx.send("You do not own this character!")
         return
 
-    charData = await _getChar(int(charID))
+    charData = _getChar(int(charID))
 
     if charData == 'INVALID CHARACTER':
         ctx.send("That is not a valid character!")
 
     cfields = {
-        "name": None,
-        "gender": None,
-        "age": None,
-        "abilities/tools": None,
-        "appearance": None,
-        "background": None,
-        "personality": None,
-        "prefilled": None,
+        "name": '',
+        "gender": '',
+        "age": '',
+        "abilities/tools": '',
+        "appearance": '',
+        "background": '',
+        "personality": '',
+        "prefilled": '',
     }
 
     owner, = charData[1:2]
@@ -260,41 +349,67 @@ async def reRegister(ctx, charID):
     try:
         await ctx.author.send("Here is your character currently.", embed=embedV)
     except:
-        filePath = charToTxt(charID=charID, owner=owner, status=status, name=cfields['name'], age=cfields['age'], gender=cfields['gender'], abil=cfields['abilities/tools'],
-                             appear=cfields['appearance'], backg=cfields['background'], person=cfields['personality'], prefilled=cfields['prefilled'], ctx=ctx)
+        filePath = charToTxt(charID=charID, owner=owner, status=status, name=cfields['name'], age=cfields['age'],
+                             gender=cfields['gender'], abil=cfields['abilities/tools'],
+                             appear=cfields['appearance'], backg=cfields['background'], person=cfields['personality'],
+                             prefilled=cfields['prefilled'], ctx=ctx)
         charFile = open(filePath, 'r')
-        ctx.author.send("Here is your character currently.", file=discord.File(filePath))
+        await ctx.author.send("Here is your character currently.", file=discord.File(filePath))
         charFile.close()
         clearLog()
 
-
-    blankList = []
-    blankFields = ''
-
-    for i in cfields:
-        temp = cfields.get(i)
-        if temp == '':
-            blankList.append(i)
-
-    for i in blankList:
-        blankFields = f"{blankFields} `{i.capitalize()}`,"
-    await ctx.author.send(
-        f"What field would you like to modify?\n You can also add one of the following fields that are not currently present within your application:\n" + blankFields)
-
+    user = ctx.author
     registerLoop = True
 
     while (registerLoop):
+
+        blankList = []
+        fullList = []
+        blankFields = ''
+        fullFields = ''
+
+        for i in cfields:
+            temp = cfields.get(i)
+            if temp == '':
+                blankList.append(i)
+            else:
+                fullList.append(i)
+
+        for i in blankList:
+            blankFields = f"{blankFields} `{i.capitalize()}`,"
+
+        for i in fullList:
+            fullFields = f"{fullFields} `{i.capitalize()}`,"
+
+        await user.send(
+            f"What field would you like to modify? Current Fields:\n{fullFields}\n You can also add one of the following fields that are not currently present within your application:\n" + blankFields)
+
         field = await getdm(ctx)
-        registerLoop = False
+        selector = field.lower()
 
-    resub = await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
-                  gender=cfields["gender"],
-                  abil=cfields["abilities/tools"],
-                  appear=cfields["appearance"], backg=cfields["background"],
-                  person=cfields["personality"],
-                  prefilled=cfields["prefilled"], charID=charID)
+        if selector in cfields:
+            await user.send(f"What would you like field {selector.capitalize()} to say?")
+            cfields[selector] = await getdm(ctx)
+            await user.send(f"Field {selector.capitalize()} has been changed.")
+        elif selector == 'done':
 
-    await ctx.author.send(f"Character {charID} has been resubmitted.")
+            await user.send(f"Your character (ID {charID}) has been resubmitted and will be reviewed at the next available oppurtunity.")
+
+            resub = await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
+                                  gender=cfields["gender"],
+                                  abil=cfields["abilities/tools"],
+                                  appear=cfields["appearance"], backg=cfields["background"],
+                                  person=cfields["personality"],
+                                  prefilled=cfields["prefilled"], charID=charID)
+
+            await alertGMs(ctx, charID, resub=True)
+            registerLoop = False
+            return
+        elif selector == 'exit':
+            await user.send("Exiting Character Resubmission!")
+            return
+        else:
+            await user.send("That is not a valid field!")
 
 
 @bot.command(pass_context=True, aliases=['reregister', 'submit', 'resubmit'])
@@ -314,7 +429,6 @@ async def register(ctx, charID=''):
         currentlyRegistering.remove(ctx.author.id)
         return
 
-
     print("DEBUG: REGISTER COMMAND FROM USER ID: ", ctx.author.id, " - ", ctx.author)
     user = ctx.author
     try:
@@ -327,6 +441,25 @@ async def register(ctx, charID=''):
         currentlyRegistering.remove(user.id)
         return
     await _registerChar(ctx, user)
+
+
+async def alertGMs(ctx, charID, resub=False):
+    embedC = await _view(ctx, idinput=str(charID), returnEmbed=True)
+
+    channelID = GMChannel()
+
+    channel = bot.get_channel(channelID)
+
+    isResubmit = ''
+
+    if resub is True:
+        isResubmit = f'**RESUBMISSION FOR CHARACTER ID {charID}**\n'
+    else:
+        isResubmit = ''
+
+    await channel.send(
+        f"<@&771070676638629948>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\nTo change the status of this character, type `rp!<approve|pending|deny> 1378.`",
+        embed=embedC)
 
 
 def getMember(owner, ctx):
@@ -426,7 +559,8 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
             charFile.close()
             clearLog()
 
-async def _getChar(charID):
+
+def _getChar(charID=0):
     cursor = conn.cursor()
 
     cursor.execute(f"SELECT count(*) FROM charlist")
@@ -575,7 +709,7 @@ def charPermissionCheck(ctx, ownerID):
 
     authorID = ctx.author.id
 
-    if ownerID == authorID or "Gamemaster" in role_names:
+    if int(ownerID) == authorID or "Gamemaster" in role_names:
         return True
     else:
         return False
@@ -700,21 +834,23 @@ async def _registerChar(ctx, user):
                 if response.lower() == 'done':
                     if not submitChar:
                         await user.send(
-                            "You character is not complete! Please fill the remaining fields before trying to register your character.")
+                            "You character is not complete! Please fill the remaining fields before trying to submit your character.")
                     else:
                         submitChar = True
 
                         owner = ctx.author.id
                         prefilled = None
 
-                        await user.send("Character has been submitted with ID: " + str(
-                            await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
-                                          gender=cfields["gender"],
-                                          abil=cfields["abilities/tools"],
-                                          appear=cfields["appearance"], backg=cfields["background"],
-                                          person=cfields["personality"],
-                                          prefilled=prefilled)))
+                        charID = await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
+                                               gender=cfields["gender"],
+                                               abil=cfields["abilities/tools"],
+                                               appear=cfields["appearance"], backg=cfields["background"],
+                                               person=cfields["personality"],
+                                               prefilled=prefilled)
+
+                        await user.send("Character has been submitted with ID: " + str(charID))
                         currentlyRegistering.remove(user.id)
+                        await alertGMs(ctx, charID)
                         return
                 elif response.lower() == 'exit':
                     await user.send(
@@ -807,9 +943,12 @@ async def _registerChar(ctx, user):
 
                 if selector not in charFields:
                     if selector == 'done':
-                        await user.send("Great! Your character has been submitted with ID: **" + str(
-                            await charadd(owner=ctx.author.id, name=name, prefilled=prefilled)) + "**")
+
+                        charID = await charadd(owner=ctx.author.id, name=name, prefilled=prefilled)
+
+                        await user.send("Great! Your character has been submitted with ID: **" + str(charID) + "**")
                         currentlyRegistering.remove(user.id)
+                        await alertGMs(ctx, charID)
                         charcomplete = True
                         return
                     elif selector == 'preview':
@@ -866,7 +1005,8 @@ def insert_returns(body):
 async def _spamChars(ctx):
     i = 0
     while i <= 1000:
-        await charadd(owner=110399543039774720, name='SPAMTEST', age='SPAMTEST', gender='SPAMTEST', abil='SPAMTEST',
+        await charadd(owner=110399543039774720, name='LOKI PAY YOUR ARTIST', age='SPAMTEST', gender='SPAMTEST',
+                      abil='SPAMTEST',
                       appear='SPAMTEST', backg='SPAMTEST', person='SPAMTEST', status='TESTING STATUS')
         i = i + 1
 
