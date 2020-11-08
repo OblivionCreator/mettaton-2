@@ -733,7 +733,7 @@ async def _registerChar(ctx, user):
 
         if resmsg == 'exit':
             await user.send("Character submission aborted.")
-            currentlyRegistering.remove(user.id);
+            currentlyRegistering.remove(user.id)
             isRegistering = False
             return
         elif resmsg == 'next':
@@ -756,8 +756,11 @@ async def _registerChar(ctx, user):
                 "Great! Let's start filling out your character. First of all, what is your characters name?")
 
             response = await getdm(ctx)
-            if response.lower() == 'exit': await user.send(
-                "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(user.id); return
+            if response.lower() == 'exit':
+                await user.send("Exiting Character Creation!")
+                isRegistering = False
+                currentlyRegistering.remove(user.id)
+                return
             cfields["name"] = response  # Gets the raw message from response
 
             canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
@@ -778,8 +781,11 @@ async def _registerChar(ctx, user):
                 # MAIN CHARACTER REGISTRATION LOOP
 
                 response = await getdm(ctx)
-                if response.lower() == 'exit': await user.send(
-                    "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(user.id); return
+                if response.lower() == 'exit':
+                    await user.send("Exiting Character Creation!")
+                    isRegistering = False
+                    currentlyRegistering.remove(user.id)
+                    return
                 selector = response.lower()
 
                 if response.lower() == 'done':
@@ -807,7 +813,7 @@ async def _registerChar(ctx, user):
                     await user.send(
                         "Exiting Character Creation!")
                     isRegistering = False
-                    currentlyRegistering.remove(user.id);
+                    currentlyRegistering.remove(user.id)
                     return
                 elif response.lower() == 'preview':
                     try:
@@ -817,9 +823,11 @@ async def _registerChar(ctx, user):
                 elif selector in cfields:
                     await user.send("What would you like field `" + selector.capitalize() + "` to say?")
                     response = await getdm(ctx)
-                    if response.lower() == 'exit': await user.send(
-                        "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(
-                        user.id); return
+                    if response.lower() == 'exit':
+                        await user.send("Exiting Character Creation!")
+                        isRegistering = False
+                        currentlyRegistering.remove(user.id)
+                        return
 
                     cfields[selector] = response
 
@@ -847,17 +855,17 @@ async def _registerChar(ctx, user):
                         specifyDone = (specifyDone + "`" + word2.capitalize() + "`, ")
 
                     if not toSpecify:
-                        await user.send("Field `" + selector.capitalize() + "` has been changed.\n"
-                                                                            "All fields have been completed. If you wish to submit your character, type `Done`. To preview your character, type `Preview`.\n"
-                                                                            "Or if you wish to change a field, enter the field you wish to modify: " + specifyDone)
+                        await user.send(
+                            f"Field `{selector.capitalize()} has been changed.\n"
+                            "All fields have been completed. If you wish to submit your character, type `Done`. To preview your character, type `Preview`.\n"
+                            f"Or if you wish to change a field, enter the field you wish to modify: {specifyDone}")
                         submitChar = True
                     else:
-                        await user.send("Field `" + selector.capitalize() + "` has been changed.\n"
-                                                                            "What field would you like to edit?\n"
-                                                                            "Remaining fields to specify: " + toSpecify + "\n"
-                                                                                                                          "Field(s) already specified: " + specifyDone)
-
-                        # End of Interactive Fields Loop
+                        await user.send(
+                            f"Field `{selector.capitalize()}` has been changed.\n`"
+                            "What field would you like to edit?\n"
+                            f"Remaining fields to specify: {toSpecify}\n"
+                            f"Field(s) already specified: {specifyDone}")
 
                 else:
                     await user.send("That is not a valid field!")
@@ -870,16 +878,22 @@ async def _registerChar(ctx, user):
             await user.send(
                 "Great! First of all, Before submitting your application, what is your characters name?")
             response = await getdm(ctx)
-            if response.lower() == 'exit': await user.send(
-                "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(user.id); return
+            if response.lower() == 'exit': 
+                await user.send("Exiting Character Creation!")
+                isRegistering = False
+                currentlyRegistering.remove(user.id)
+                return
 
             name = response
 
             await user.send(
                 "Let's submit your character. \nPlease upload, link or paste in your character. Web links, text files and raw text are all accepted, and will be handled appropriately.")
             prefilled = await getdm(ctx)
-            if prefilled.lower() == 'exit': await user.send(
-                "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(user.id); return
+            if prefilled.lower() == 'exit':
+                await user.send("Exiting Character Creation!")
+                isRegistering = False
+                currentlyRegistering.remove(user.id)
+                return
 
             charFields = ["prefilled application", "name"]
 
@@ -889,8 +903,11 @@ async def _registerChar(ctx, user):
                     "Fields: `Name`, `Prefilled Application`")
                 response = await getdm(ctx)
                 selector = response.lower()
-                if selector == 'exit': await user.send(
-                    "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(user.id); return
+                if selector == 'exit':
+                    await user.send("Exiting Character Creation!")
+                    isRegistering = False
+                    currentlyRegistering.remove(user.id)
+                    return
 
                 if selector not in charFields:
                     if selector == 'done':
@@ -913,9 +930,11 @@ async def _registerChar(ctx, user):
                 elif selector == 'name':
                     await user.send("What would you like the name to be?")
                     response = await getdm(ctx)
-                    if response.lower() == 'exit': await user.send(
-                        "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(
-                        user.id); return
+                    if response.lower() == 'exit':
+                        await user.send("Exiting Character Creation!")
+                        isRegistering = False
+                        currentlyRegistering.remove(user.id)
+                        return
                     name = response
                     await user.send("Your Characters name has been set.")
 
@@ -923,9 +942,11 @@ async def _registerChar(ctx, user):
                     await user.send(
                         "Please upload, link or paste in your character. Web links, text files and raw text are all accepted, and will be handled appropriately.")
                     response = await getdm(ctx)
-                    if response.lower() == 'exit': await user.send(
-                        "Exiting Character Creation!"); isRegistering = False; currentlyRegistering.remove(
-                        user.id); return
+                    if response.lower() == 'exit':
+                        await user.send("Exiting Character Creation!")
+                        isRegistering = False
+                        currentlyRegistering.remove(user.id)
+                        return
                     prefilled = response
             return
 
