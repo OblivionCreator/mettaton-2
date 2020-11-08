@@ -450,7 +450,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
     else:
         sanID = int(idinput)
 
-        charData = await _getChar(sanID)
+        charData = _getChar(sanID)
 
         if charData == 'INVALID CHARACTER':
             await ctx.send("That is not a valid character!")
