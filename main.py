@@ -284,7 +284,7 @@ async def _changeStatus(ctx, charID='',charStatus='Pending' ,*args):
     sql = '''UPDATE charlist SET status = 'Approved' WHERE charID is ?'''
     cursor.execute(sql, [charID])
     conn.commit()
-    await alertUser(ctx, charInt, status, reason)
+    await alertUser(ctx, charInt, charStatus, reason)
     await ctx.send(f"Character `ID: {charID}` has been set to `Approved`")
 
 @bot.command()
