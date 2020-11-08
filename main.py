@@ -264,7 +264,7 @@ async def alertUser(ctx, charID, status, reason):
     await user.send(f"The status of character ID **{charID}** (Name: **{name}**) has been set to `{status}` by {ctx.author.mention}")
 
 
-async def _changeStatus(ctx, charID='',charStatus='Pending' ,*args):
+async def _changeStatus(ctx, charID='',charStatus='Pending' , reason=''):
     if not await checkGM(ctx):
         await ctx.send("You do not have permission to do this!")
         return
@@ -278,27 +278,36 @@ async def _changeStatus(ctx, charID='',charStatus='Pending' ,*args):
     except:
         charInt = charID
 
-    reason = ' '.join(args)
-
     cursor = conn.cursor()
     sql = '''UPDATE charlist SET status = 'Approved' WHERE charID is ?'''
     cursor.execute(sql, [charID])
     conn.commit()
     await alertUser(ctx, charInt, charStatus, reason)
-    await ctx.send(f"Character `ID: {charID}` has been set to `Approved`")
+    await ctx.send(f"Character `ID: {charID}` has been set to `{charStatus}`")
 
 @bot.command()
-async def approve(ctx,charID):
-    await _changeStatus(ctx, charID=charID, charStatus='Approved', *args)
+async def approve(ctx,charID, *args):
+
+    reason = ' '.join(args)
+    await _changeStatus(ctx, charID=charID, charStatus='Approved', reason=reason)
 
 @bot.command()
-async def deny(ctx, charID):
-    pass
+async def pending(ctx,charID, *args):
 
+    reason = ' '.join(args)
+    await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=reason)
 
 @bot.command()
-async def pending(ctx, charID):
-    pass
+async def deny(ctx,charID, *args):
+
+    reason = ' '.join(args)
+    await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=reason)
+
+@bot.command()
+async def kill(ctx,charID, *args):
+
+    reason = ' '.join(args)
+    await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=reason)
 
 
 async def reRegister(ctx, charID):
