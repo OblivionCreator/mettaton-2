@@ -176,9 +176,9 @@ async def _setGMCChannel(ctx):
 @commands.cooldown(1, 3600, commands.BucketType.guild)
 async def sans(ctx):
     if random.randint(0, 100) <= 10:
-        await ctx.send(open('resources/ascii_papyrus.txt').read())
+        await ctx.send(open('resources/ascii_papyrus.txt', encoding="utf-8").read())
     else:
-        await ctx.send(open('resources/ascii_sans.txt').read())
+        await ctx.send(open('resources/ascii_sans.txt', encoding="utf-8").read())
 
 
 @bot.command()
