@@ -448,7 +448,7 @@ def getMember(owner, ctx):
     return member
 
 
-def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, person, prefilled, ctx):
+def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, person, prefilled, ctx, misc=''):
     curTime = int(time.time())
 
     path = f"charoverflow/{curTime}-{charID}.txt"
@@ -466,6 +466,7 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
     if backg != '': charTXT = charTXT + f"Background: {backg}\n"
     if person != '': charTXT = charTXT + f"Personality: {person}\n"
     if prefilled != '': charTXT = charTXT + f"Prefilled: {prefilled}\n"
+    if misc != '': charTXT = charTXT + misc
 
     charFile.write(charTXT)
 
@@ -519,15 +520,18 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 else:
                     embedVar.add_field(name=i, value=charData[i], inline=False)
 
+        MiscData = ''
+
         if charData["misc"] == '{}':
             pass
         else:
             try:
                 customFields = json.loads(charData["misc"])
-
+                miscData = ''
                 for i in customFields:
                     print(i)
                     embedVar.add_field(name=i, value=customFields[i], inline=False)
+                    miscData = f"{miscData}\n{i}: {customFields[i]}"
             except:
                 pass
 
@@ -548,7 +552,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                                  name=charData["Name"], age=charData["Age"], gender=charData["Gender"],
                                  abil=charData["Abilities/Tools"],
                                  appear=charData["Appearance"], backg=charData["Background"],
-                                 person=charData["Personality"], prefilled=charData["Prefilled Application"], ctx=ctx)
+                                 person=charData["Personality"], prefilled=charData["Prefilled Application"], misc=miscData, ctx=ctx)
 
             charFile = open(filePath, 'r')
             if dmchannel is False:
