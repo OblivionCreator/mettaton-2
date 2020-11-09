@@ -13,6 +13,8 @@ from dataclasses import dataclass
 import time
 import json
 
+from discord.utils import get
+
 intents = discord.Intents.default()
 intents.members = True
 
@@ -20,6 +22,7 @@ bot = commands.Bot(
     command_prefix=['rp!', 'sans!', 'mtt!', 'arik ', 'bliv pls ', 'bliv ', 'https://en.wikipedia.org/wiki/Insanity ',
                     'Rp!'],
     intents=intents, case_insensitive=True)
+bot.remove_command("help")
 currentlyRegistering = []
 
 
@@ -80,6 +83,12 @@ async def globally_block_dms(ctx):
     if ctx.guild is None and ctx.author.id not in currentlyRegistering:
         await ctx.author.send("You should do this in a server, you know.")
     return ctx.guild is not None
+
+
+@bot.check
+async def globally_block_roles(ctx):
+    blacklist = ["NPC"]
+    return not any(get(ctx.guild.roles, name=name) in ctx.author.roles for name in blacklist)
 
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
@@ -155,12 +164,6 @@ def message_check(channel=None, author=None, content=None, ignore_bot=True, lowe
     return check
 
 
-@bot.command()
-async def test(ctx):
-    print("TEST")
-    pass
-
-
 @bot.command(name='setGMChannel')
 async def _setGMCChannel(ctx):
     role_names = [role.name for role in ctx.author.roles]
@@ -173,6 +176,31 @@ async def _setGMCChannel(ctx):
         outfile.close()
 
     await ctx.send("Successfully set GM Channel!")
+
+
+@bot.command()
+async def approve(ctx, charID, *args):
+    '''GM ONLY - Approves a specified character.'''
+    reason = ' '.join(args)
+    await _changeStatus(ctx, charID=charID, charStatus='Approved', reason=reason)
+
+
+@bot.command()
+async def pending(ctx, charID, *, message: str):
+    '''GM ONLY - Sets a specified character to Pending.'''
+    await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=message)
+
+
+@bot.command()
+async def deny(ctx, charID, *, message: str):
+    '''GM ONLY - Denies a specified character.'''
+    await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=message)
+
+
+@bot.command()
+async def kill(ctx, charID, *, message: str):
+    '''GM ONLY - Kills a specified character.'''
+    await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=message)
 
 
 async def checkGM(ctx):
@@ -227,31 +255,6 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
 
     await alertUser(ctx, charInt, charStatus, reason)
     await ctx.send(f"Character `ID: {charID}` has been set to `{charStatus}`")
-
-
-@bot.command()
-async def approve(ctx, charID, *args):
-    '''GM ONLY - Approves a specified character.'''
-    reason = ' '.join(args)
-    await _changeStatus(ctx, charID=charID, charStatus='Approved', reason=reason)
-
-
-@bot.command()
-async def pending(ctx, charID, *, message: str):
-    '''GM ONLY - Sets a specified character to Pending.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=message)
-
-
-@bot.command()
-async def deny(ctx, charID, *, message: str):
-    '''GM ONLY - Denies a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=message)
-
-
-@bot.command()
-async def kill(ctx, charID, *, message: str):
-    '''GM ONLY - Kills a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=message)
 
 
 async def reRegister(ctx, charID):
@@ -460,10 +463,10 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
 
 @bot.command(name='view', aliases=['cm', 'charmanage', 'samwhy'])
 async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
-    '''USAGE:
-    rp!view <ID>
+    '''Brings up character information for the specified character.
 
-    Brings up character information for the specified character.'''
+    USAGE:
+    rp!view <ID>'''
 
     if not idinput.isnumeric() or int(idinput) == 0:
         await ctx.send("That is not a valid character ID!")
@@ -731,12 +734,12 @@ async def getUserChars(ctx, userID, pageSize, pageID):
 
 @bot.command(name='list')
 async def _list(ctx, pageIdentifier='', page=''):
-    '''USAGE:
-    rp!list <PAGE>
-    rp!list <MENTION|USER ID> <PAGE>
+    '''Shows a list of all characters, sorted into pages of 15 Characters.
+    Mentioning a user or user ID will bring up all characters belonging to that user.
 
-    Shows a list of all characters, sorted into pages of 15 Characters.
-    Mentioning a user or user ID will bring up all characters belonging to that user.'''
+    USAGE:
+    rp!list <PAGE>
+    rp!list <MENTION|USER ID> <PAGE>'''
 
     pageSize = 15
     if pageIdentifier.isnumeric():
@@ -805,11 +808,11 @@ def convertField(selector):
 
 @bot.command(name='search')
 async def _search(ctx, selector='', extra1='', extra2=''):
-    '''USAGE:
-    rp!search <NAME> - Searches for characters with a specific name.
-    rp!search <FIELD> <QUERY> - Searches a specific field for a search query.
+    '''Searches for a character using fields provided.
 
-    Searches for a character using fields provided.'''
+    USAGE:
+    rp!search <NAME> - Searches for characters with a specific name.
+    rp!search <FIELD> <QUERY> - Searches a specific field for a search query.'''
 
     if selector == '':
         await ctx.send("You have not entered anything to search!")
@@ -866,6 +869,11 @@ async def _sqlSearch(ctx, field=None, search='', pageNo=0):
 
 @bot.command(name='delete')
 async def _delete(ctx, charDel='', confirmation=''):
+    '''Deletes a specified character.
+
+    USAGE:
+    rp!delete <ID>'''
+
     if charDel.isnumeric():
         if confirmation.lower() == 'confirm':
             await _deleteChar(ctx, int(charDel))
@@ -1244,6 +1252,10 @@ async def _spamChars(ctx):
 @bot.command(name='eval')
 @commands.is_owner()
 async def eval_fn(ctx, *, cmd):
+    '''LOCKED TO OBLIVION ONLY. DO NOT USE.
+
+    Evalutes an expression.'''
+
     fn_name = "_eval_expr"
 
     cmd = cmd.strip("` ")
@@ -1271,6 +1283,9 @@ async def eval_fn(ctx, *, cmd):
     result = (await eval(f"{fn_name}()", env))
     await ctx.send(result)
 
+@bot.command()
+async def help(ctx):
+    await ctx.send("For help, please check out the Wiki on Github!\nhttps://github.com/OblivionCreator/mettaton-2.py/wiki")
 
 ## Fun Stuff ##
 
@@ -1284,6 +1299,7 @@ async def sans(ctx):
 
 
 @bot.command()
+@commands.cooldown(1, 60, commands.BucketType.guild)
 async def papyrus(ctx):
     await ctx.send(f"Nice Try, <@{str(ctx.author.id)}>")
 
@@ -1291,11 +1307,17 @@ async def papyrus(ctx):
 async def changeStatus():
     status = discord.Status.online
 
-    statusChoice = ['Aik still hasn\'t played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role', 'old enough for soriel',
+    statusChoice = ['Aik still hasn\'t played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role',
+                    'old enough for soriel',
                     'haha he smope weef', 'SHUP', 'AMA', '...meme?', 'role!unban', '1000 blood', 'blame AIK',
                     'blame Bliv', 'blame Samario', 'blame Wisty', 'Venom is a Furry', 'blankets = lewd???',
                     'oblivion pinged everyone', 'oblivion pinged everyone... again', 'arrrr peee?', 'buzzy bee',
-                    'this server contains chemicals known to the nation of Arkias to cause cancer.', 'No Thoughts. Dream Empty', 'Stuck in a Nightmare\'s Paradise', 'PUBBY', 'You have OneShot at this.', 'What plant is Lotus?', 'Default Dance', 'Mystiri is All', 'This server has been murder free for 0 Months', 'Pending', 'Vampire Celery', 'Bugsonas Are Real', 'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm', 'Member Retention now at 1%', 'with Smol Bot']
+                    'this server contains chemicals known to the nation of Arkias to cause cancer.',
+                    'No Thoughts. Dream Empty', 'Stuck in a Nightmare\'s Paradise', 'PUBBY',
+                    'You have OneShot at this.', 'What plant is Lotus?', 'Default Dance', 'Mystiri is All',
+                    'This server has been murder free for 0 Months', 'Pending', 'Vampire Celery', 'Bugsonas Are Real',
+                    'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm',
+                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy']
 
     while True:
         await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
