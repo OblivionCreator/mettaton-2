@@ -304,14 +304,14 @@ async def reRegister(ctx, charID):
 
     owner = charData["Owner"]
     status = charData["Status"]
-    cfields['name'], = charData["Name"]
-    cfields['age'], = charData["Age"]
-    cfields['gender'], = charData["Gender"]
-    cfields['abilities/tools'], = charData["Abilities/Tools"]
-    cfields['appearance'], = charData["Appearance"]
-    cfields['background'], = charData["Background"]
-    cfields['personality'], = charData["Personality"]
-    cfields['prefilled'], = charData["Prefilled Application"]
+    cfields['name'] = charData["Name"]
+    cfields['age'] = charData["Age"]
+    cfields['gender'] = charData["Gender"]
+    cfields['abilities/tools'] = charData["Abilities/Tools"]
+    cfields['appearance'] = charData["Appearance"]
+    cfields['background'] = charData["Background"]
+    cfields['personality'] = charData["Personality"]
+    cfields['prefilled'] = charData["Prefilled Application"]
 
     embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
 
