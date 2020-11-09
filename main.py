@@ -216,10 +216,10 @@ async def checkGM(ctx):
 
 
 async def alertUser(ctx, charID, status, reason):
-    charData = _getChar(charID)
+    charData = _getCharDict(charID)
 
-    ownerID, = charData[1:2]
-    name, = charData[3:4]
+    ownerID = charData["Owner"]
+    name, = charData["Name"]
 
     print('debug')
 
