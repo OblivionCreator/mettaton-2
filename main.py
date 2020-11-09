@@ -465,8 +465,11 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
     if appear != '': charTXT = charTXT + f"Appearance: {appear}\n"
     if backg != '': charTXT = charTXT + f"Background: {backg}\n"
     if person != '': charTXT = charTXT + f"Personality: {person}\n"
-    if prefilled != '': charTXT = charTXT + f"Prefilled: {prefilled}\n"
     if misc != '': charTXT = charTXT + misc
+    if prefilled == '' or prefilled is None:
+        pass
+    else:
+        charTXT = charTXT + f"Prefilled: {prefilled}\n"
 
     charFile.write(charTXT)
 
