@@ -286,7 +286,7 @@ async def reRegister(ctx, charID):
         await ctx.send("You do not own this character!")
         return
 
-    charData = _getChar(int(charID))
+    charData = _getCharDict(int(charID))
 
     if charData == 'INVALID CHARACTER':
         ctx.send("That is not a valid character!")
@@ -302,16 +302,16 @@ async def reRegister(ctx, charID):
         "prefilled": '',
     }
 
-    owner, = charData[1:2]
-    status, = charData[2:3]
-    cfields['name'], = charData[3:4]
-    cfields['age'], = charData[4:5]
-    cfields['gender'], = charData[5:6]
-    cfields['abilities/tools'], = charData[6:7]
-    cfields['appearance'], = charData[7:8]
-    cfields['background'], = charData[8:9]
-    cfields['personality'], = charData[9:10]
-    cfields['prefilled'], = charData[10:11]
+    owner, = charData["Owner"]
+    status, = charData["Status"]
+    cfields['name'], = charData["Name"]
+    cfields['age'], = charData["Age"]
+    cfields['gender'], = charData["Gender"]
+    cfields['abilities/tools'], = charData["Abilities/Tools"]
+    cfields['appearance'], = charData["Appearance"]
+    cfields['background'], = charData["Background"]
+    cfields['personality'], = charData["Personality"]
+    cfields['prefilled'], = charData["Prefilled Application"]
 
     embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
 
