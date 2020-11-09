@@ -302,8 +302,8 @@ async def reRegister(ctx, charID):
         "prefilled": '',
     }
 
-    owner, = charData["Owner"]
-    status, = charData["Status"]
+    owner = charData["Owner"]
+    status = charData["Status"]
     cfields['name'], = charData["Name"]
     cfields['age'], = charData["Age"]
     cfields['gender'], = charData["Gender"]
