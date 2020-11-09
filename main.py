@@ -195,11 +195,13 @@ async def alertUser(ctx, charID, status, reason):
     user = ctx.guild.get_member(int(ownerID))
 
     if user == None:
-        await ctx.send(f"I was unable to send a message to the owner of Character {charID}. User either does not exist or has left the server.")
+        await ctx.send(
+            f"I was unable to send a message to the owner of Character {charID}. User either does not exist or has left the server.")
         return
 
     try:
-        await user.send(f"The status of character ID **{charID}** (Name: **{name[0:100]}**) has been set to `{status}` by {ctx.author.mention} for:\n{reason}")
+        await user.send(
+            f"The status of character ID **{charID}** (Name: **{name[0:100]}**) has been set to `{status}` by {ctx.author.mention} for:\n{reason}")
     except:
         ctx.send(f"I was unable to send a message to the owner of Character {charID}. They may have their DMs closed!")
 
@@ -235,19 +237,19 @@ async def approve(ctx, charID, *args):
 
 
 @bot.command()
-async def pending(ctx, charID, *, message:str):
+async def pending(ctx, charID, *, message: str):
     '''GM ONLY - Sets a specified character to Pending.'''
     await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=message)
 
 
 @bot.command()
-async def deny(ctx, charID, *, message:str):
+async def deny(ctx, charID, *, message: str):
     '''GM ONLY - Denies a specified character.'''
     await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=message)
 
 
 @bot.command()
-async def kill(ctx, charID, *, message:str):
+async def kill(ctx, charID, *, message: str):
     '''GM ONLY - Kills a specified character.'''
     await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=message)
 
@@ -297,6 +299,7 @@ async def reRegister(ctx, charID):
     cfields['prefilled'], = charData[10:11]
 
     embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
+
     try:
         await ctx.author.send("Here is your character currently.", embed=embedV)
     except:
@@ -457,7 +460,6 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
 
 @bot.command(name='view', aliases=['cm', 'charmanage', 'samwhy'])
 async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
-
     '''USAGE:
     rp!view <ID>
 
@@ -468,54 +470,48 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
     else:
         sanID = int(idinput)
 
-        charData = _getChar(sanID)
+        charData = _getCharDict(sanID)
 
         if charData == 'INVALID CHARACTER':
             await ctx.send("That is not a valid character!")
             return
 
-        print(charData)
-
-        owner, = charData[1:2]
-        status, = charData[2:3]
-        name, = charData[3:4]
-        age, = charData[4:5]
-        gender, = charData[5:6]
-        abil, = charData[6:7]
-        appear, = charData[7:8]
-        backg, = charData[8:9]
-        person, = charData[9:10]
-        prefilled, = charData[10:11]
-        misc, = charData[11:12]
-
-        print(prefilled)
-
         color = 0x000000
 
-        if (status == 'Pending'):
+        if (charData["Status"] == 'Pending'):
             color = 0xFFD800
-        elif (status == 'Approved'):
+        elif (charData["Status"] == 'Approved'):
             color = 0x00FF00
-        elif (status == 'Denied'):
+        elif (charData["Status"] == 'Denied'):
             color = 0xFF0000
 
-        member = ctx.message.guild.get_member(int(owner))
+        member = ctx.message.guild.get_member(int(charData["Owner"]))
 
         embedVar = discord.Embed(title=f"Viewing Character {sanID}",
-                                 description=f"Showing Information for Character ID: {sanID}", color=color)
-        embedVar.add_field(name="Owner:", value=f"{member or (owner) + ' (User has left the server.)'}", inline=True)
-        embedVar.add_field(name="Status:", value=status, inline=False)
-        embedVar.add_field(name="Name:", value=name, inline=True)
-        if age != '': embedVar.add_field(name="Age:", value=age, inline=False)
-        if gender != '': embedVar.add_field(name="Gender:", value=gender, inline=False)
-        if abil != '': embedVar.add_field(name="Abilities/Tools:", value=abil, inline=False)
-        if appear != '': embedVar.add_field(name="Appearance:", value=appear, inline=False)
-        if backg != '': embedVar.add_field(name="Background:", value=backg, inline=False)
-        if person != '': embedVar.add_field(name="Personality:", value=person, inline=False)
-        if prefilled is None or prefilled == '':
-            print("None!")
+                                 description=f"Showing Information for Character ID: {sanID}", color=color,
+                                 inline=False)
+
+        noDisplay = ['charID', 'misc', 'Owner']
+
+        charOwner = ctx.guild.get_member(int(charData["Owner"]))
+
+        embedVar.add_field(name='Owner', value=charOwner or f'{charData["Owner"]} (User has left server)', inline=False)
+
+        for i in charData:
+            if i not in noDisplay:
+                if charData[i] == '' or charData[i] is None:
+                    pass
+                else:
+                    embedVar.add_field(name=i, value=charData[i], inline=False)
+
+        if charData["misc"] == '{}':
+            pass
         else:
-            embedVar.add_field(name="Prefilled Application:", value=prefilled, inline=False)
+            customFields = json.loads(charData["misc"])
+
+            for i in customFields:
+                print(i)
+                embedVar.add_field(name=i, value=customFields[i], inline=False)
 
         if returnEmbed is True:
             return embedVar
@@ -527,11 +523,14 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 await ctx.author.send(embed=embedVar)
         except:
             if dmchannel is False:
-                await ctx.send(f"This character was too too long, so I have dumped it to a file.")
+                await ctx.send(f"This character was too long, so I have dumped it to a file.")
             else:
                 ctx.author.send(f"This character was too too long, so I have dumped it to a file.")
-            filePath = charToTxt(charID=sanID, owner=owner, status=status, name=name, age=age, gender=gender, abil=abil,
-                                 appear=appear, backg=backg, person=person, prefilled=prefilled, ctx=ctx)
+            filePath = charToTxt(charID=charData["charID"], owner=charData["Owner"], status=charData["Status"],
+                                 name=charData["Name"], age=charData["Age"], gender=charData["Gender"],
+                                 abil=charData["Abilities/Tools"],
+                                 appear=charData["Appearance"], backg=charData["Background"],
+                                 person=charData["Personality"], prefilled=charData["Prefilled Application"], ctx=ctx)
 
             charFile = open(filePath, 'r')
             if dmchannel is False:
@@ -542,7 +541,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
             clearLog()
 
 
-def _getChar(charID=0):
+def _getChar(charID=0):  # Deprecated as of Version 2.1 - Use _getCharDict instead!
     cursor = conn.cursor()
 
     cursor.execute(f"SELECT count(*) FROM charlist")
@@ -564,6 +563,46 @@ def _getChar(charID=0):
         return charInvalid
 
     return charInfo
+
+
+def _getCharDict(charID=0):
+    cur = conn.cursor()
+
+    charData = {
+        "charID": None,
+        "Owner": None,
+        "Status": None,
+        "Name": None,
+        "Age": None,
+        "Gender": None,
+        "Abilities/Tools": None,
+        "Appearance": None,
+        "Background": None,
+        "Personality": None,
+        "Prefilled Application": None,
+        "misc": None,
+    }
+
+    sql = '''SELECT * FROM charlist WHERE charID is ?'''
+
+    cur.execute(sql, [charID])
+
+    chars = cur.fetchone()
+    print(chars)
+
+    x = 0
+
+    if chars is None:
+        return 'INVALID CHARACTER'
+
+    for i in charData:
+        charData[i] = chars[x]
+        x = x + 1
+
+    if (charData['Status'] == 'Disabled'):
+        return 'INVALID CHARACTER'
+
+    return charData
 
 
 async def fuckoffloki(ctx):
@@ -641,7 +680,8 @@ async def _set(ctx, charID, field, *, message: str):
     if message == '':
         message == 'Deleted'
 
-    await channel.send(f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
+    await channel.send(
+        f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
 
 
 def _setSQL(charID, field, content):
@@ -691,7 +731,6 @@ async def getUserChars(ctx, userID, pageSize, pageID):
 
 @bot.command(name='list')
 async def _list(ctx, pageIdentifier='', page=''):
-
     '''USAGE:
     rp!list <PAGE>
     rp!list <MENTION|USER ID> <PAGE>
@@ -766,7 +805,6 @@ def convertField(selector):
 
 @bot.command(name='search')
 async def _search(ctx, selector='', extra1='', extra2=''):
-
     '''USAGE:
     rp!search <NAME> - Searches for characters with a specific name.
     rp!search <FIELD> <QUERY> - Searches a specific field for a search query.
@@ -840,6 +878,22 @@ async def _delete(ctx, charDel='', confirmation=''):
                 return
     else:
         await ctx.send("Invalid Character ID!")
+
+
+@bot.command(name='undelete', aliases=['recover'])
+async def _undelete(ctx, charID):
+    if not await checkGM(ctx):
+        await ctx.send("You do not have permission to do this!")
+        return
+
+    if charID.isnumeric():
+        icharID = int(charID)
+
+    cursor = conn.cursor()
+
+    cursor.execute("UPDATE charlist SET status = 'Pending' WHERE charID is ?", [icharID])
+    conn.commit()
+    ctx.send(f"Character {icharID} has been recovered.")
 
 
 def charPermissionCheck(ctx, ownerID):
@@ -921,7 +975,6 @@ def previewChar(cfields=None, prefilled=None, name=None):
 
 
 async def _registerChar(ctx, user):
-
     '''USAGE:
     rp!register
     rp!register <ID> | reregister <ID>
@@ -1238,11 +1291,16 @@ async def papyrus(ctx):
 async def changeStatus():
     status = discord.Status.online
 
-    statusChoice = ['Aik still hasn\'t played Undertale', 'Meme', 'with Bliv\'s feelings', 'old enough for soriel', 'haha he smope weef', 'SHUP', 'AMA', '...meme?', 'role!unban', '1000 blood', 'blame AIK', 'blame Bliv', 'blame Samario', 'blame Wisty', 'Venom is a Furry', 'blankets = lewd???', 'oblivion pinged everyone', 'oblivion pinged everyone... again', 'arrrr peee?', 'buzzy bee', 'this server contains chemicals known to the nation of Arkias']
+    statusChoice = ['Aik still hasn\'t played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role', 'old enough for soriel',
+                    'haha he smope weef', 'SHUP', 'AMA', '...meme?', 'role!unban', '1000 blood', 'blame AIK',
+                    'blame Bliv', 'blame Samario', 'blame Wisty', 'Venom is a Furry', 'blankets = lewd???',
+                    'oblivion pinged everyone', 'oblivion pinged everyone... again', 'arrrr peee?', 'buzzy bee',
+                    'this server contains chemicals known to the nation of Arkias to cause cancer.', 'No Thoughts. Dream Empty', 'Stuck in a Nightmare\'s Paradise', 'PUBBY', 'You have OneShot at this.', 'What plant is Lotus?', 'Default Dance', 'Mystiri is All', 'This server has been murder free for 0 Months', 'Pending', 'Vampire Celery', 'Bugsonas Are Real', 'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm', 'Member Retention now at 1%', 'with Smol Bot']
 
     while True:
         await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
         await asyncio.sleep(300)
+
 
 bot.run(token)
 close_connection(database)
