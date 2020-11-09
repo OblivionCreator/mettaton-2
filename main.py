@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import math
 import os
@@ -16,7 +17,8 @@ intents = discord.Intents.default()
 intents.members = True
 
 bot = commands.Bot(
-    command_prefix=['rp!', 'sans!', 'mtt!', 'arik ', 'bliv pls ', 'bliv ', 'https://en.wikipedia.org/wiki/Insanity ', 'Rp!'],
+    command_prefix=['rp!', 'sans!', 'mtt!', 'arik ', 'bliv pls ', 'bliv ', 'https://en.wikipedia.org/wiki/Insanity ',
+                    'Rp!'],
     intents=intents, case_insensitive=True)
 currentlyRegistering = []
 
@@ -34,6 +36,7 @@ async def on_ready():
         clearLog()
         try:
             await (bot.get_channel(GMChannel)).send("Mettaton 2.0.5 Loaded!")
+            bot.loop.create_task(changeStatus())
 
         except:
             print(GMChannel)
@@ -172,19 +175,6 @@ async def _setGMCChannel(ctx):
     await ctx.send("Successfully set GM Channel!")
 
 
-@bot.command()
-@commands.cooldown(1, 3600, commands.BucketType.guild)
-async def sans(ctx):
-    if random.randint(0, 100) <= 10:
-        await ctx.send(open('resources/ascii_papyrus.txt', encoding="utf-8").read())
-    else:
-        await ctx.send(open('resources/ascii_sans.txt', encoding="utf-8").read())
-
-
-@bot.command()
-async def papyrus(ctx):
-    await ctx.send(f"Nice Try, <@{str(ctx.author.id)}>")
-
 async def checkGM(ctx):
     role_names = [role.name for role in ctx.author.roles]
 
@@ -193,8 +183,8 @@ async def checkGM(ctx):
     else:
         return True
 
-async def alertUser(ctx, charID, status, reason):
 
+async def alertUser(ctx, charID, status, reason):
     charData = _getChar(charID)
 
     ownerID, = charData[1:2]
@@ -203,10 +193,18 @@ async def alertUser(ctx, charID, status, reason):
     print('debug')
 
     user = ctx.guild.get_member(int(ownerID))
-    await user.send(f"The status of character ID **{charID}** (Name: **{name}**) has been set to `{status}` by {ctx.author.mention}")
+
+    if user == None:
+        await ctx.send(f"I was unable to send a message to the owner of Character {charID}. User either does not exist or has left the server.")
+        return
+
+    try:
+        await user.send(f"The status of character ID **{charID}** (Name: **{name[0:100]}**) has been set to `{status}` by {ctx.author.mention} for:\n{reason}")
+    except:
+        ctx.send(f"I was unable to send a message to the owner of Character {charID}. They may have their DMs closed!")
 
 
-async def _changeStatus(ctx, charID='',charStatus='Pending' , reason=''):
+async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
     if not await checkGM(ctx):
         await ctx.send("You do not have permission to do this!")
         return
@@ -221,35 +219,37 @@ async def _changeStatus(ctx, charID='',charStatus='Pending' , reason=''):
         charInt = charID
 
     cursor = conn.cursor()
-    sql = '''UPDATE charlist SET status = 'Approved' WHERE charID is ?'''
-    cursor.execute(sql, [charID])
+    sql = '''UPDATE charlist SET status = ? WHERE charID is ?'''
+    cursor.execute(sql, [charStatus, charID])
     conn.commit()
+
     await alertUser(ctx, charInt, charStatus, reason)
     await ctx.send(f"Character `ID: {charID}` has been set to `{charStatus}`")
 
-@bot.command()
-async def approve(ctx,charID, *args):
 
+@bot.command()
+async def approve(ctx, charID, *args):
+    '''GM ONLY - Approves a specified character.'''
     reason = ' '.join(args)
     await _changeStatus(ctx, charID=charID, charStatus='Approved', reason=reason)
 
-@bot.command()
-async def pending(ctx,charID, *args):
-
-    reason = ' '.join(args)
-    await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=reason)
 
 @bot.command()
-async def deny(ctx,charID, *args):
+async def pending(ctx, charID, *, message:str):
+    '''GM ONLY - Sets a specified character to Pending.'''
+    await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=message)
 
-    reason = ' '.join(args)
-    await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=reason)
 
 @bot.command()
-async def kill(ctx,charID, *args):
+async def deny(ctx, charID, *, message:str):
+    '''GM ONLY - Denies a specified character.'''
+    await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=message)
 
-    reason = ' '.join(args)
-    await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=reason)
+
+@bot.command()
+async def kill(ctx, charID, *, message:str):
+    '''GM ONLY - Kills a specified character.'''
+    await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=message)
 
 
 async def reRegister(ctx, charID):
@@ -294,7 +294,7 @@ async def reRegister(ctx, charID):
     cfields['appearance'], = charData[7:8]
     cfields['background'], = charData[8:9]
     cfields['personality'], = charData[9:10]
-    cfields['prefilled'], = charData[-1:]
+    cfields['prefilled'], = charData[10:11]
 
     embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
     try:
@@ -305,9 +305,17 @@ async def reRegister(ctx, charID):
                              appear=cfields['appearance'], backg=cfields['background'], person=cfields['personality'],
                              prefilled=cfields['prefilled'], ctx=ctx)
         charFile = open(filePath, 'r')
-        await ctx.author.send("Here is your character currently.", file=discord.File(filePath))
+
+        try:
+            await ctx.author.send("Here is your character currently.", file=discord.File(filePath))
+            ctx.send(":mailbox_with_mail: Please check your DMs!")
+        except:
+            await ctx.send("Unable to send a DM! Please check your privacy settings and try again.")
+            return
         charFile.close()
         clearLog()
+
+    await ctx.send(":mailbox_with_mail: Please check your DMs!")
 
     user = ctx.author
     registerLoop = True
@@ -344,7 +352,8 @@ async def reRegister(ctx, charID):
             await user.send(f"Field {selector.capitalize()} has been changed.")
         elif selector == 'done':
 
-            await user.send(f"Your character (ID {charID}) has been resubmitted and will be reviewed at the next available oppurtunity.")
+            await user.send(
+                f"Your character (ID {charID}) has been resubmitted and will be reviewed at the next available oppurtunity.")
 
             resub = await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
                                   gender=cfields["gender"],
@@ -371,14 +380,15 @@ async def register(ctx, charID=''):
 
     currentlyRegistering.append(ctx.author.id)
 
+    if charID.isnumeric():
+        await reRegister(ctx, charID)
+        currentlyRegistering.remove(
+            ctx.author.id)  # Fixed Bug with sending 'Please check your DMs!' as well as 'You do not own this character!' - Thanks @Venom134
+        return
+
     await ctx.send(":mailbox_with_mail: Please check your DMs!")
     for word in currentlyRegistering:
         print(word)
-
-    if charID.isnumeric():
-        await reRegister(ctx, charID)
-        currentlyRegistering.remove(ctx.author.id)
-        return
 
     print("DEBUG: REGISTER COMMAND FROM USER ID: ", ctx.author.id, " - ", ctx.author)
     user = ctx.author
@@ -397,6 +407,8 @@ async def register(ctx, charID=''):
 async def alertGMs(ctx, charID, resub=False):
     embedC = await _view(ctx, idinput=str(charID), returnEmbed=True)
 
+    embedC.set_footer(text=f"To change the status of this character, type rp!<approve|pending|deny> {charID}.")
+
     channelID = GMChannel()
 
     channel = bot.get_channel(channelID)
@@ -409,7 +421,7 @@ async def alertGMs(ctx, charID, resub=False):
         isResubmit = ''
 
     await channel.send(
-        f"<@&771070676638629948>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\nTo change the status of this character, type `rp!<approve|pending|deny> 1378.`",
+        f"<@&771070676638629948>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
         embed=embedC)
 
 
@@ -445,6 +457,12 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
 
 @bot.command(name='view', aliases=['cm', 'charmanage', 'samwhy'])
 async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
+
+    '''USAGE:
+    rp!view <ID>
+
+    Brings up character information for the specified character.'''
+
     if not idinput.isnumeric() or int(idinput) == 0:
         await ctx.send("That is not a valid character ID!")
     else:
@@ -467,14 +485,24 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
         appear, = charData[7:8]
         backg, = charData[8:9]
         person, = charData[9:10]
-        prefilled, = charData[-1:]
+        prefilled, = charData[10:11]
+        misc, = charData[11:12]
 
         print(prefilled)
+
+        color = 0x000000
+
+        if (status == 'Pending'):
+            color = 0xFFD800
+        elif (status == 'Approved'):
+            color = 0x00FF00
+        elif (status == 'Denied'):
+            color = 0xFF0000
 
         member = ctx.message.guild.get_member(int(owner))
 
         embedVar = discord.Embed(title=f"Viewing Character {sanID}",
-                                 description=f"Showing Information for Character ID: {sanID}", color=0xff0000)
+                                 description=f"Showing Information for Character ID: {sanID}", color=color)
         embedVar.add_field(name="Owner:", value=f"{member or (owner) + ' (User has left the server.)'}", inline=True)
         embedVar.add_field(name="Status:", value=status, inline=False)
         embedVar.add_field(name="Name:", value=name, inline=True)
@@ -484,18 +512,21 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
         if appear != '': embedVar.add_field(name="Appearance:", value=appear, inline=False)
         if backg != '': embedVar.add_field(name="Background:", value=backg, inline=False)
         if person != '': embedVar.add_field(name="Personality:", value=person, inline=False)
-        if prefilled != '': embedVar.add_field(name="Prefilled Application:", value=prefilled, inline=False)
+        if prefilled is None or prefilled == '':
+            print("None!")
+        else:
+            embedVar.add_field(name="Prefilled Application:", value=prefilled, inline=False)
 
         if returnEmbed is True:
             return embedVar
 
         try:
-            if (dmchannel is False):
+            if dmchannel is False:
                 await ctx.send(embed=embedVar)
             else:
                 await ctx.author.send(embed=embedVar)
         except:
-            if (dmchannel is False):
+            if dmchannel is False:
                 await ctx.send(f"This character was too too long, so I have dumped it to a file.")
             else:
                 ctx.author.send(f"This character was too too long, so I have dumped it to a file.")
@@ -542,8 +573,83 @@ async def fuckoffloki(ctx):
 
 
 @bot.command(name='set', aliases=['setprop'])
-async def _set(ctx, charID, *args):
-    await ctx.send(f"{charID}, {args}")
+async def _set(ctx, charID, field, *, message: str):
+    '''Sets a field to a specified value. For major character revisions, please use rp!reregister <ID>
+
+    USAGE: rp!set <ID> <FIELD> <What you want the field to be>
+
+    Valid Fields:
+
+    Name
+    Age
+    Gender
+    Abilities | Abilities/Tools
+    Appearance
+    Background
+    Personality
+    Prefilled | Prefilled Application
+
+    Owner (GM ONLY)
+    Status (GM ONLY)
+    '''
+
+    if field.lower() in fields:
+        fSan = convertField(field.lower())
+
+        if fSan == 'charID':
+            await ctx.send("You can not change the ID of a character!")
+            return
+    else:
+        await ctx.send("That is not a valid field!")
+
+    if message == '' or message == 'delete':
+        message = ''
+        if fSan == 'name':
+            await ctx.send("You can not remove a characters' name!")
+            return
+
+    if fSan == 'owner' or fSan == 'status':
+        if await checkGM(ctx) is False:
+            await ctx.send("You need to be a GM to change this!")
+            return
+
+    if charID.isnumeric():
+        icharID = int(charID)
+    else:
+        await ctx.send("That is not a valid character ID!")
+        return
+
+    ownerID = _charExists(icharID)
+
+    if ownerID == False:
+        await ctx.send("This character does not exist!")
+        return
+
+    if not charPermissionCheck(ctx, ownerID):
+        await ctx.send("You do not have permission to modify this character!")
+        return
+
+    _setSQL(icharID, fSan, message)
+
+    if message == '':
+        await ctx.send(f"Field {field.capitalize()} has been deleted.")
+    else:
+        await ctx.send(f"Field {field.capitalize()} has been changed.")
+
+    channel = bot.get_channel(GMChannel())
+
+    if message == '':
+        message == 'Deleted'
+
+    await channel.send(f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
+
+
+def _setSQL(charID, field, content):
+    cur = conn.cursor()
+
+    sql = f'''UPDATE charlist SET {field} = ? WHERE charID is ?'''
+    cur.execute(sql, [content, charID])
+    conn.commit()
 
 
 # @bot.command(name='setprop')
@@ -553,7 +659,7 @@ async def _set(ctx, charID, *args):
 
 @dataclass
 class CharacterListItem:
-    """Stores Character Information in a Class"""
+    """Stores Basic Character Information in a Class"""
     id: int
     name: str
     owner: str
@@ -563,22 +669,16 @@ async def getUserChars(ctx, userID, pageSize, pageID):
     pageNo = int(pageID - 1)
 
     print(pageNo)
-
     cursor = conn.cursor()
-
     userInt = int(userID)
-
     cursor.execute(f"SELECT count(*) FROM charlist WHERE status IS NOT 'Disabled' AND owner IS {userID}")
-
     count = cursor.fetchone()[0]
-
     print(count)
 
     cursor.execute(
         f"SELECT charID, name, owner FROM charlist WHERE status IS NOT 'Disabled' AND owner IS {userInt} ORDER BY charID LIMIT {pageSize} OFFSET {pageNo * pageSize}")
 
     charList = [CharacterListItem(charID, name, owner) for charID, name, owner in cursor]
-
     charListStr = ''
 
     for i in charList:
@@ -591,6 +691,14 @@ async def getUserChars(ctx, userID, pageSize, pageID):
 
 @bot.command(name='list')
 async def _list(ctx, pageIdentifier='', page=''):
+
+    '''USAGE:
+    rp!list <PAGE>
+    rp!list <MENTION|USER ID> <PAGE>
+
+    Shows a list of all characters, sorted into pages of 15 Characters.
+    Mentioning a user or user ID will bring up all characters belonging to that user.'''
+
     pageSize = 15
     if pageIdentifier.isnumeric():
         pageNo = int(pageIdentifier) - 1
@@ -634,9 +742,88 @@ async def _list(ctx, pageIdentifier='', page=''):
     await ctx.send(f"List of all characters: (Page: {pageNo + 1} of {math.ceil(count / pageSize)})\n{charListStr}")
 
 
+fields = ['owner', 'ownerid', 'status', 'name', 'charid', 'id', 'age', 'gender', 'abilities/tools', 'abilities',
+          'appearance', 'background', 'personality', 'prefilled', 'prefilled application', 'misc']
+
+
+def convertField(selector):
+    if selector == 'owner' or selector == 'ownerid':
+        return 'owner'
+    if selector == 'id' or selector == 'charid':
+        return 'charID'
+    if selector == 'appearance':
+        return 'appear'
+    if selector == 'background':
+        return 'backg'
+    if selector == 'abilities/tools' or selector == 'abilities':
+        return 'abil'
+    if selector == 'personality':
+        return 'person'
+    if selector == 'prefilled' or selector == 'prefilled application' or selector == 'misc':
+        return 'prefilled'
+    return selector
+
+
 @bot.command(name='search')
-async def _search(ctx):
-    pass
+async def _search(ctx, selector='', extra1='', extra2=''):
+
+    '''USAGE:
+    rp!search <NAME> - Searches for characters with a specific name.
+    rp!search <FIELD> <QUERY> - Searches a specific field for a search query.
+
+    Searches for a character using fields provided.'''
+
+    if selector == '':
+        await ctx.send("You have not entered anything to search!")
+        return
+
+    if (ctx.message.mentions):
+        await _list(ctx, pageIdentifier=selector, page=extra1)
+        return
+
+    Sfield = False
+
+    if selector.lower() in fields:
+
+        fieldFinal = convertField(selector.lower())
+
+        if extra2.isnumeric():
+            pageNo = int(extra2) - 1
+        else:
+            pageNo = 0
+        await _sqlSearch(ctx, field=fieldFinal, search=extra1, pageNo=pageNo)
+    else:
+        if extra1.isnumeric():
+            pageNo = int(extra1) - 1
+        else:
+            pageNo = 0
+        await _sqlSearch(ctx, search=selector, pageNo=pageNo)
+
+
+async def _sqlSearch(ctx, field=None, search='', pageNo=0):
+    cur = conn.cursor()
+
+    if field is None:
+        field = 'name'
+
+    sqlC = f'''SELECT count(*) FROM charlist WHERE {field} LIKE ? AND status IS NOT 'Disabled' '''
+    cur.execute(sqlC, ['%' + search + '%'])
+    count = cur.fetchone()[0]
+
+    sql = f'''SELECT charid, owner, name FROM charlist WHERE {field} LIKE ? AND status IS NOT 'Disabled' LIMIT 25 OFFSET ?'''
+    cur.execute(sql, ['%' + search + '%', (25 * pageNo)])
+
+    charList = [CharacterListItem(id=charID, name=name, owner=owner) for charID, owner, name in cur]
+    print(charList)
+
+    charListStr = ''
+
+    for i in charList:
+        member = ctx.message.guild.get_member(int(i.owner))
+        charListStr = f"{charListStr}**`{i.id}.`** {i.name[0:30]} (Owner: {member or i.owner})\n"
+
+    await ctx.send(
+        f"List of characters meeting search criteria (Page {pageNo + 1} of {math.ceil(count / 25)}):\n{charListStr}")
 
 
 @bot.command(name='delete')
@@ -666,21 +853,30 @@ def charPermissionCheck(ctx, ownerID):
         return False
 
 
-async def _deleteChar(ctx, charID):
+def _charExists(charID):
     cursor = conn.cursor()
-    cursor.execute(f"SELECT owner FROM charlist WHERE charID IS {charID} AND status IS NOT 'Disabled'")
+    cursor.execute(f"SELECT owner FROM charlist WHERE charID IS ? AND status IS NOT 'Disabled'", [charID])
 
     owner = cursor.fetchone()
 
     if owner is None:
-        await ctx.send("That character does not exist!")
-        return
+        return False
     else:
         ownerP = owner[0]
-        print(ownerP)
+        return ownerP
+
+
+async def _deleteChar(ctx, charID):
+    ownerP = _charExists(charID)
+
+    if ownerP is False:
+        await ctx.send("That character does not exist!")
+        return
+
+    cursor = conn.cursor()
 
     if charPermissionCheck(ctx, ownerID=ownerP) is True:
-        cursor.execute(f"UPDATE charlist SET status = 'Disabled' WHERE charID is {charID}")
+        cursor.execute(f"UPDATE charlist SET status = 'Disabled' WHERE charID is ?", [charID])
         conn.commit()
         await ctx.send(f"Character {charID} has been deleted.")
     else:
@@ -725,6 +921,15 @@ def previewChar(cfields=None, prefilled=None, name=None):
 
 
 async def _registerChar(ctx, user):
+
+    '''USAGE:
+    rp!register
+    rp!register <ID> | reregister <ID>
+
+    Registers a new character, or resubmits an existing character if an ID is input.
+
+    Guides you through the command. Please see #rules and #policy for more help.'''
+
     isRegistering = True
 
     while isRegistering:
@@ -856,13 +1061,13 @@ async def _registerChar(ctx, user):
 
                     if not toSpecify:
                         await user.send(
-                            f"Field `{selector.capitalize()} has been changed.\n"
+                            f"Field `{selector.capitalize()}` has been changed.\n"
                             "All fields have been completed. If you wish to submit your character, type `Done`. To preview your character, type `Preview`.\n"
                             f"Or if you wish to change a field, enter the field you wish to modify: {specifyDone}")
                         submitChar = True
                     else:
                         await user.send(
-                            f"Field `{selector.capitalize()}` has been changed.\n`"
+                            f"Field `{selector.capitalize()}` has been changed.\n"
                             "What field would you like to edit?\n"
                             f"Remaining fields to specify: {toSpecify}\n"
                             f"Field(s) already specified: {specifyDone}")
@@ -878,7 +1083,7 @@ async def _registerChar(ctx, user):
             await user.send(
                 "Great! First of all, Before submitting your application, what is your characters name?")
             response = await getdm(ctx)
-            if response.lower() == 'exit': 
+            if response.lower() == 'exit':
                 await user.send("Exiting Character Creation!")
                 isRegistering = False
                 currentlyRegistering.remove(user.id)
@@ -1013,6 +1218,31 @@ async def eval_fn(ctx, *, cmd):
     result = (await eval(f"{fn_name}()", env))
     await ctx.send(result)
 
+
+## Fun Stuff ##
+
+@bot.command()
+@commands.cooldown(1, 3600, commands.BucketType.guild)
+async def sans(ctx):
+    if random.randint(0, 100) <= 10:
+        await ctx.send(open('resources/ascii_papyrus.txt', encoding="utf-8").read())
+    else:
+        await ctx.send(open('resources/ascii_sans.txt', encoding="utf-8").read())
+
+
+@bot.command()
+async def papyrus(ctx):
+    await ctx.send(f"Nice Try, <@{str(ctx.author.id)}>")
+
+
+async def changeStatus():
+    status = discord.Status.online
+
+    statusChoice = ['Aik still hasn\'t played Undertale', 'Meme', 'with Bliv\'s feelings', 'old enough for soriel', 'haha he smope weef', 'SHUP', 'AMA', '...meme?', 'role!unban', '1000 blood', 'blame AIK', 'blame Bliv', 'blame Samario', 'blame Wisty', 'Venom is a Furry', 'blankets = lewd???', 'oblivion pinged everyone', 'oblivion pinged everyone... again', 'arrrr peee?', 'buzzy bee', 'this server contains chemicals known to the nation of Arkias']
+
+    while True:
+        await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
+        await asyncio.sleep(300)
 
 bot.run(token)
 close_connection(database)
