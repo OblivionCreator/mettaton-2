@@ -38,7 +38,7 @@ async def on_ready():
         GMChannel = int(file.read())
         clearLog()
         try:
-            await (bot.get_channel(GMChannel)).send("Mettaton 2.0.5 Loaded!")
+            #await (bot.get_channel(GMChannel)).send("Mettaton 2.0.5 Loaded!")
             bot.loop.create_task(changeStatus())
 
         except:
@@ -439,7 +439,7 @@ async def alertGMs(ctx, charID, resub=False):
         isResubmit = ''
 
     await channel.send(
-        f"<@&771070676638629948>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
+        f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
         embed=embedC)
 
 
@@ -522,11 +522,14 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
         if charData["misc"] == '{}':
             pass
         else:
-            customFields = json.loads(charData["misc"])
+            try:
+                customFields = json.loads(charData["misc"])
 
-            for i in customFields:
-                print(i)
-                embedVar.add_field(name=i, value=customFields[i], inline=False)
+                for i in customFields:
+                    print(i)
+                    embedVar.add_field(name=i, value=customFields[i], inline=False)
+            except:
+                pass
 
         if returnEmbed is True:
             return embedVar
