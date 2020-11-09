@@ -186,21 +186,24 @@ async def approve(ctx, charID, *args):
 
 
 @bot.command()
-async def pending(ctx, charID, *, message: str):
+async def pending(ctx, charID, *args):
     '''GM ONLY - Sets a specified character to Pending.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=message)
+    reason = ' '.join(args)
+    await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=reason)
 
 
 @bot.command()
-async def deny(ctx, charID, *, message: str):
+async def deny(ctx, charID, *args):
     '''GM ONLY - Denies a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=message)
+    reason = ' '.join(args)
+    await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=reason)
 
 
 @bot.command()
-async def kill(ctx, charID, *, message: str):
+async def kill(ctx, charID, *args):
     '''GM ONLY - Kills a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=message)
+    reason = ' '.join(args)
+    await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=reason)
 
 
 async def checkGM(ctx):
@@ -250,8 +253,17 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
 
     cursor = conn.cursor()
     sql = '''UPDATE charlist SET status = ? WHERE charID is ?'''
-    cursor.execute(sql, [charStatus, charID])
+    cursor.execute(sql, [charStatus, charInt])
     conn.commit()
+
+    if charStatus == 'Approved':
+
+        charData = _getCharDict(charInt)
+        userid = charData["Owner"]
+        user = ctx.guild.get_member(int(userid))
+        role = get(ctx.guild.roles, name="Roleplayer")
+        await user.add_roles(role)
+
 
     await alertUser(ctx, charInt, charStatus, reason)
     await ctx.send(f"Character `ID: {charID}` has been set to `{charStatus}`")
