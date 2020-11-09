@@ -219,7 +219,7 @@ async def alertUser(ctx, charID, status, reason):
     charData = _getCharDict(charID)
 
     ownerID = charData["Owner"]
-    name, = charData["Name"]
+    name = charData["Name"]
 
     print('debug')
 
