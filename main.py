@@ -484,7 +484,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
     USAGE:
     rp!view <ID>'''
 
-    MiscData = ''
+    miscData = ''
 
     if not idinput.isnumeric() or int(idinput) == 0:
         await ctx.send("That is not a valid character ID!")
@@ -541,6 +541,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
 
         if returnEmbed is True:
             return embedVar
+
 
         try:
             if dmchannel is False:
