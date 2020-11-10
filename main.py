@@ -720,7 +720,6 @@ def _setSQL(charID, field, content):
     conn.commit()
 
 
-@bot.command(name='custom', aliases=['customfield','setcustom','customset'])
 async def _custom(ctx, charID='', field='', *, message:str):
 
     if charID.isnumeric():
