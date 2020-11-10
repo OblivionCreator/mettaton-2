@@ -436,9 +436,28 @@ async def alertGMs(ctx, charID, resub=False):
     else:
         isResubmit = ''
 
-    await channel.send(
-        f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
-        embed=embedC)
+    try:
+        await channel.send(
+            f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
+            embed=embedC)
+    except:
+
+
+        charData = _getCharDict(charID)
+
+        filePath = charToTxt(charID=charData["charID"], owner=charData["Owner"], status=charData["Status"],
+                             name=charData["Name"], age=charData["Age"], gender=charData["Gender"],
+                             abil=charData["Abilities/Tools"],
+                             appear=charData["Appearance"], backg=charData["Background"],
+                             person=charData["Personality"], prefilled=charData["Prefilled Application"],
+                             misc=charData["misc"], ctx=ctx)
+
+        charFile = open(filePath, 'r')
+
+        await channel.send(
+            f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n")
+        await channel.send(file=discord.File(filePath))
+
 
 
 def getMember(owner, ctx):
