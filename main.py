@@ -557,10 +557,10 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
             try:
                 customFields = json.loads(charData["misc"])
                 miscData = ''
-                for i in customFields:
-                    print(i)
-                    embedVar.add_field(name=i, value=customFields[i], inline=False)
-                    miscData = f"{miscData}\n{i}: {customFields[i]}"
+                for name, value in customFields.items():
+                    print(name)
+                    embedVar.add_field(name=name, value=value, inline=False)
+                    miscData = f"{miscData}\n{i}: {value}"
             except:
                 pass
 
@@ -880,7 +880,7 @@ async def _list(ctx, pageIdentifier='', page=''):
 
 
 fields = ['owner', 'ownerid', 'status', 'name', 'charid', 'id', 'age', 'gender', 'abilities/tools', 'abilities',
-          'appearance', 'background', 'personality', 'prefilled', 'prefilled application']
+          'appearance', 'background', 'personality', 'prefilled', 'prefilled application', 'custom', 'misc']
 
 
 def convertField(selector):
