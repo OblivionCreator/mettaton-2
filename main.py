@@ -93,7 +93,7 @@ async def globally_block_roles(ctx):
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
                   status='Pending', charID=''):
-    character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled)
+    character = [owner, status, name, age, gender, abil, appear, backg, person, prefilled]
 
     """
     :param conn:
