@@ -823,6 +823,10 @@ async def getUserChars(ctx, userID, pageSize, pageID):
         member = ctx.message.guild.get_member(int(i.owner))
         charListStr = f"{charListStr}**`{i.id}.`** {i.name[0:75]} (Owner: {member or i.owner})\n"
 
+    if len(charList) == 0:
+        await ctx.send("No characters matched the query!")
+        return
+
     await ctx.send(
         f"List of characters belonging to {member or userID + ' (User has left server)'} (Page: {pageNo + 1} of {math.ceil(count / pageSize)})\n{charListStr}")
 
