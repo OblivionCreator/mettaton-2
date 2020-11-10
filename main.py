@@ -345,7 +345,7 @@ async def reRegister(ctx, charID):
 
         for i in cfields:
             temp = cfields.get(i)
-            if temp == '':
+            if temp == '' or temp is None:
                 blankList.append(i)
             else:
                 fullList.append(i)
@@ -504,12 +504,13 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
     miscData = ''
 
     if not idinput.isnumeric():
-        await _search(ctx, idinput)
-        charData = await _sqlSearch(ctx, "name", search=idinput, raw=True)
+        charData = await _sqlSearch(ctx, True, field="name", search=idinput)
         charLen = len(charData)
         if charLen == 1:
             charV, = charData
             sanID = charV.id
+            await _view(ctx, idinput=str(sanID))
+            return
         else:
             await _search(ctx, idinput)
             return
@@ -929,16 +930,16 @@ async def _search(ctx, selector='', extra1='', extra2=''):
             pageNo = int(extra2) - 1
         else:
             pageNo = 0
-        await _sqlSearch(ctx, field=fieldFinal, search=extra1, pageNo=pageNo)
+        await _sqlSearch(ctx, field=fieldFinal, search=extra1, pageNo=pageNo, rawR=False)
     else:
         if extra1.isnumeric():
             pageNo = int(extra1) - 1
         else:
             pageNo = 0
-        await _sqlSearch(ctx, search=selector, pageNo=pageNo)
+        await _sqlSearch(ctx, False, search=selector, pageNo=pageNo)
 
 
-async def _sqlSearch(ctx, field=None, search='', pageNo=0, raw=False):
+async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
     cur = conn.cursor()
 
     if field is None:
@@ -954,7 +955,8 @@ async def _sqlSearch(ctx, field=None, search='', pageNo=0, raw=False):
     charList = [CharacterListItem(id=charID, name=name, owner=owner) for charID, owner, name in cur]
     print(charList)
 
-    if raw == True:
+    if rawR is True:
+        print("Returning")
         return charList
 
     charListStr = ''
