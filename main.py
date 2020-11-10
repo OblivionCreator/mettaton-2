@@ -485,7 +485,8 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
     miscData = ''
 
     if not idinput.isnumeric() or int(idinput) == 0:
-        await ctx.send("That is not a valid character ID!")
+        await _search(ctx, idinput)
+        return
     else:
         sanID = int(idinput)
 
@@ -764,7 +765,6 @@ async def _custom(ctx, charID='', field='', *, message:str):
 
     await ctx.send(f"Custom field {field} has been deleted.")
 
-@_custom.error
 async def _custom_error(ctx, args):
     await ctx.send("Unable to set a custom field to a blank value!")
 
