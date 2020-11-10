@@ -38,7 +38,7 @@ async def on_ready():
         GMChannel = int(file.read())
         clearLog()
         try:
-            #await (bot.get_channel(GMChannel)).send("Mettaton 2.0.5 Loaded!")
+            # await (bot.get_channel(GMChannel)).send("Mettaton 2.0.5 Loaded!")
             bot.loop.create_task(changeStatus())
 
         except:
@@ -93,7 +93,7 @@ async def globally_block_roles(ctx):
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
                   status='Pending', charID=''):
-    character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled)
+    character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled, '{}')
 
     """
     :param conn:
@@ -102,7 +102,7 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
     """
 
     if charID == '':
-        sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled) VALUES(?,?,?,?,?,?,?,?,?,?)'''
+        sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled,misc) VALUES(?,?,?,?,?,?,?,?,?,?,?)'''
         cur = conn.cursor()
         cur.execute(sql, character)
         conn.commit()
@@ -257,13 +257,11 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
     conn.commit()
 
     if charStatus == 'Approved':
-
         charData = _getCharDict(charInt)
         userid = charData["Owner"]
         user = ctx.guild.get_member(int(userid))
         role = get(ctx.guild.roles, name="Roleplayer")
         await user.add_roles(role)
-
 
     await alertUser(ctx, charInt, charStatus, reason)
     await ctx.send(f"Character `ID: {charID}` has been set to `{charStatus}`")
@@ -525,7 +523,6 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 else:
                     embedVar.add_field(name=i, value=charData[i], inline=False)
 
-
         if charData["misc"] == '{}':
             pass
         else:
@@ -542,7 +539,6 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
         if returnEmbed is True:
             return embedVar
 
-
         try:
             if dmchannel is False:
                 await ctx.send(embed=embedVar)
@@ -557,7 +553,8 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                                  name=charData["Name"], age=charData["Age"], gender=charData["Gender"],
                                  abil=charData["Abilities/Tools"],
                                  appear=charData["Appearance"], backg=charData["Background"],
-                                 person=charData["Personality"], prefilled=charData["Prefilled Application"], misc=miscData, ctx=ctx)
+                                 person=charData["Personality"], prefilled=charData["Prefilled Application"],
+                                 misc=miscData, ctx=ctx)
 
             charFile = open(filePath, 'r')
             if dmchannel is False:
@@ -666,7 +663,8 @@ async def _set(ctx, charID, field, *, message: str):
             await ctx.send("You can not change the ID of a character!")
             return
     else:
-        await ctx.send("That is not a valid field!")
+        await _custom(ctx, charID=charID, field=field, message=message)
+        return
 
     if message == '' or message == 'delete':
         message = ''
@@ -695,7 +693,11 @@ async def _set(ctx, charID, field, *, message: str):
         await ctx.send("You do not have permission to modify this character!")
         return
 
-    _setSQL(icharID, fSan, message)
+
+    if fSan == 'misc':
+        ctx.send("Custom Field support using rp!set has been deprecated. Please use rp!custom instead!")
+    else:
+        _setSQL(icharID, fSan, message)
 
     if message == '':
         await ctx.send(f"Field {field.capitalize()} has been deleted.")
@@ -710,7 +712,6 @@ async def _set(ctx, charID, field, *, message: str):
     await channel.send(
         f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
 
-
 def _setSQL(charID, field, content):
     cur = conn.cursor()
 
@@ -719,10 +720,54 @@ def _setSQL(charID, field, content):
     conn.commit()
 
 
-# @bot.command(name='setprop')
-# async def _setprop(ctx):
-#    pass
+@bot.command(name='custom', aliases=['customfield','setcustom','customset'])
+async def _custom(ctx, charID='', field='', *, message:str):
 
+    if charID.isnumeric():
+        icharID = int(charID)
+    else:
+        await ctx.send("That is not a valid character ID!")
+        return
+
+    charData = _getCharDict(icharID)
+
+    if charData == 'INVALID CHARACTER':
+        await ctx.send("That is not a valid character!")
+        return
+
+    if ctx.author.id != int(charData["Owner"]):
+        await ctx.send("You do not own this character!")
+        return
+
+    customFields = json.loads(charData["misc"])
+    print(customFields)
+    fieldDel = False
+
+    if len(customFields) >= 12:
+        await ctx.send("You can not have more than 12 custom fields! Either modify an existing field, or remove an unneeded field.")
+        return
+
+    if message.lower() == 'delete':
+        try:
+            customFields.pop(field)
+            fieldDel = True
+        except:
+            await ctx.send("This field does not exist!")
+            return
+    else:
+        customFields[field] = message
+    print(customFields)
+    miscData = json.dumps(customFields)
+    _setSQL(icharID, "misc", miscData)
+    if fieldDel == False:
+        await ctx.send(f"Custom field {field} has been set.")
+        return
+
+    await ctx.send(f"Custom field {field} has been deleted.")
+
+@_custom.error
+async def _custom_error(ctx, args):
+    await ctx.send("Unable to set a custom field to a blank value!")
 
 @dataclass
 class CharacterListItem:
@@ -809,7 +854,7 @@ async def _list(ctx, pageIdentifier='', page=''):
 
 
 fields = ['owner', 'ownerid', 'status', 'name', 'charid', 'id', 'age', 'gender', 'abilities/tools', 'abilities',
-          'appearance', 'background', 'personality', 'prefilled', 'prefilled application', 'misc']
+          'appearance', 'background', 'personality', 'prefilled', 'prefilled application']
 
 
 def convertField(selector):
@@ -825,14 +870,17 @@ def convertField(selector):
         return 'abil'
     if selector == 'personality':
         return 'person'
-    if selector == 'prefilled' or selector == 'prefilled application' or selector == 'misc':
+    if selector == 'prefilled' or selector == 'prefilled application':
         return 'prefilled'
+    if selector == 'misc' or selector == 'custom':
+        return 'misc'
     return selector
 
 
 @bot.command(name='search')
 async def _search(ctx, selector='', extra1='', extra2=''):
     '''Searches for a character using fields provided.
+
 
     USAGE:
     rp!search <NAME> - Searches for characters with a specific name.
@@ -1307,9 +1355,12 @@ async def eval_fn(ctx, *, cmd):
     result = (await eval(f"{fn_name}()", env))
     await ctx.send(result)
 
+
 @bot.command()
 async def help(ctx):
-    await ctx.send("For help, please check out the Wiki on Github!\nhttps://github.com/OblivionCreator/mettaton-2.py/wiki")
+    await ctx.send(
+        "For help, please check out the Wiki on Github!\nhttps://github.com/OblivionCreator/mettaton-2.py/wiki")
+
 
 ## Fun Stuff ##
 
@@ -1341,7 +1392,7 @@ async def changeStatus():
                     'You have OneShot at this.', 'What plant is Lotus?', 'Default Dance', 'Mystiri is All',
                     'This server has been murder free for 0 Months', 'Pending', 'Vampire Celery', 'Bugsonas Are Real',
                     'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm',
-                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy']
+                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters']
 
     while True:
         await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
