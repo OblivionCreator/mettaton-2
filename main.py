@@ -93,7 +93,7 @@ async def globally_block_roles(ctx):
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
                   status='Pending', charID=''):
-    character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled, '{}')
+    character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled)
 
     """
     :param conn:
@@ -102,6 +102,7 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
     """
 
     if charID == '':
+        character.append('{}')
         sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled,misc) VALUES(?,?,?,?,?,?,?,?,?,?,?)'''
         cur = conn.cursor()
         cur.execute(sql, character)
@@ -324,7 +325,6 @@ async def reRegister(ctx, charID):
 
         try:
             await ctx.author.send("Here is your character currently.", file=discord.File(filePath))
-            ctx.send(":mailbox_with_mail: Please check your DMs!")
         except:
             await ctx.send("Unable to send a DM! Please check your privacy settings and try again.")
             return
@@ -484,9 +484,16 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
 
     miscData = ''
 
-    if not idinput.isnumeric() or int(idinput) == 0:
+    if not idinput.isnumeric():
         await _search(ctx, idinput)
-        return
+        charData = await _sqlSearch(ctx, "name", search=idinput, raw=True)
+        charLen = len(charData)
+        if charLen == 1:
+            charV, = charData
+            sanID = charV.id
+        else:
+            await _search(ctx, idinput)
+            return
     else:
         sanID = int(idinput)
 
@@ -912,7 +919,7 @@ async def _search(ctx, selector='', extra1='', extra2=''):
         await _sqlSearch(ctx, search=selector, pageNo=pageNo)
 
 
-async def _sqlSearch(ctx, field=None, search='', pageNo=0):
+async def _sqlSearch(ctx, field=None, search='', pageNo=0, raw=False):
     cur = conn.cursor()
 
     if field is None:
@@ -927,6 +934,9 @@ async def _sqlSearch(ctx, field=None, search='', pageNo=0):
 
     charList = [CharacterListItem(id=charID, name=name, owner=owner) for charID, owner, name in cur]
     print(charList)
+
+    if raw == True:
+        return charList
 
     charListStr = ''
 
