@@ -3,6 +3,8 @@ import glob
 import math
 import os
 import random
+from discord.ext import tasks
+from datetime import datetime
 import discord
 from discord.ext import commands
 import sqlite3
@@ -12,11 +14,20 @@ import ast
 from dataclasses import dataclass
 import time
 import json
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
 from discord.utils import get
 
 intents = discord.Intents.default()
 intents.members = True
+
+backupOngoing = False
+
+gauth = GoogleAuth()
+gauth.LocalWebserverAuth()
+
+drive = GoogleDrive(gauth)
 
 bot = commands.Bot(
     command_prefix=['rp!', 'sans!', 'mtt!', 'arik ', 'bliv pls ', 'bliv ', 'https://en.wikipedia.org/wiki/Insanity ',
@@ -28,24 +39,17 @@ currentlyRegistering = []
 
 def GMChannel():
     with open('.config') as file:
-        GMChannel = int(file.read())
-        return GMChannel
+        channel = int(file.read())
+        file.close()
+
+    return channel
 
 
 @bot.event
 async def on_ready():
-    with open('.config') as file:
-        GMChannel = int(file.read())
-        clearLog()
-        try:
-            # await (bot.get_channel(GMChannel)).send("Mettaton 2.0.5 Loaded!")
-            bot.loop.create_task(changeStatus())
-
-        except:
-            print(GMChannel)
-            print("GMChannel is invalid!")
-
-        file.close()
+    # await (bot.get_channel(GMChannel)).send("Mettaton 2.0.5 Loaded!")
+    changeStatus.start()
+    autoBackup.start()
 
 
 def create_connection(db_file):
@@ -89,6 +93,11 @@ async def globally_block_dms(ctx):
 async def globally_block_roles(ctx):
     blacklist = ["NPC"]
     return not any(get(ctx.guild.roles, name=name) in ctx.author.roles for name in blacklist)
+
+
+@bot.check
+async def block_during_backup(ctx):
+    return not backupOngoing
 
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
@@ -442,7 +451,6 @@ async def alertGMs(ctx, charID, resub=False):
             embed=embedC)
     except:
 
-
         charData = _getCharDict(charID)
 
         filePath = charToTxt(charID=charData["charID"], owner=charData["Owner"], status=charData["Status"],
@@ -457,7 +465,6 @@ async def alertGMs(ctx, charID, resub=False):
         await channel.send(
             f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n")
         await channel.send(file=discord.File(filePath))
-
 
 
 def getMember(owner, ctx):
@@ -721,7 +728,6 @@ async def _set(ctx, charID, field, *, message: str):
         await ctx.send("You do not have permission to modify this character!")
         return
 
-
     if fSan == 'misc':
         ctx.send("Custom Field support using rp!set has been deprecated. Please use rp!custom instead!")
     else:
@@ -740,6 +746,7 @@ async def _set(ctx, charID, field, *, message: str):
     await channel.send(
         f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
 
+
 def _setSQL(charID, field, content):
     cur = conn.cursor()
 
@@ -748,8 +755,7 @@ def _setSQL(charID, field, content):
     conn.commit()
 
 
-async def _custom(ctx, charID='', field='', *, message:str):
-
+async def _custom(ctx, charID='', field='', *, message: str):
     if charID.isnumeric():
         icharID = int(charID)
     else:
@@ -771,7 +777,8 @@ async def _custom(ctx, charID='', field='', *, message:str):
     fieldDel = False
 
     if len(customFields) >= 12:
-        await ctx.send("You can not have more than 12 custom fields! Either modify an existing field, or remove an unneeded field.")
+        await ctx.send(
+            "You can not have more than 12 custom fields! Either modify an existing field, or remove an unneeded field.")
         return
 
     if message.lower() == 'delete':
@@ -792,8 +799,10 @@ async def _custom(ctx, charID='', field='', *, message:str):
 
     await ctx.send(f"Custom field {field} has been deleted.")
 
+
 async def _custom_error(ctx, args):
     await ctx.send("Unable to set a custom field to a blank value!")
+
 
 @dataclass
 class CharacterListItem:
@@ -1344,17 +1353,6 @@ def insert_returns(body):
         insert_returns(body[-1].body)
 
 
-@bot.command(name='testspam')
-@commands.is_owner()
-async def _spamChars(ctx):
-    i = 0
-    while i <= 1000:
-        await charadd(owner=110399543039774720, name='LOKI PAY YOUR ARTIST', age='SPAMTEST', gender='SPAMTEST',
-                      abil='SPAMTEST',
-                      appear='SPAMTEST', backg='SPAMTEST', person='SPAMTEST', status='TESTING STATUS')
-        i = i + 1
-
-
 @bot.command(name='eval')
 @commands.is_owner()
 async def eval_fn(ctx, *, cmd):
@@ -1396,6 +1394,54 @@ async def help(ctx):
         "For help, please check out the Wiki on Github!\nhttps://github.com/OblivionCreator/mettaton-2.py/wiki")
 
 
+## Auto Backup ##
+
+@tasks.loop(hours=24)
+async def autoBackup():
+    print("Running Backup")
+    await runBackup()
+
+
+@bot.command(name='forcebackup')
+@commands.is_owner()
+async def _forceBackup(ctx):
+    await runBackup()
+
+
+async def runBackup():
+    global database
+    global backupOngoing
+
+    backupOngoing = True
+
+    channel = bot.get_channel(int(GMChannel()))
+    date = datetime.now()
+    timerStart = time.perf_counter()
+    await channel.send("Starting Backup! The bot may not respond to commands.")
+    status = discord.Status.idle
+    await bot.change_presence(activity=discord.Game("Auto-Backup in Progress!"), status=status)
+
+    print("Closing Database Connection...")
+    close_connection(database)
+
+    folderID = '1Wzt7aGfXhcQDeoZMIilmZUFZQWvC582H'
+
+    backupName = f"mttchars-{date.strftime('%Y-%m-%d %H:%M:%S')}"
+
+    dBackup = drive.CreateFile({'title': backupName, "parents": [{"id": folderID}]})
+    dBackup.SetContentFile(database)
+    dBackup.Upload()
+
+    create_connection(database)
+    print("Reopening Database Connection...")
+
+    timerEnd = time.perf_counter()
+    await channel.send(f"Backup Complete in {str((timerEnd-timerStart))[0:5]} seconds.")
+
+    backupOngoing = False
+    await statusChanger()
+
+
 ## Fun Stuff ##
 
 @bot.command()
@@ -1413,7 +1459,12 @@ async def papyrus(ctx):
     await ctx.send(f"Nice Try, <@{str(ctx.author.id)}>")
 
 
+@tasks.loop(minutes=5)
 async def changeStatus():
+    await statusChanger()
+
+
+async def statusChanger():
     status = discord.Status.online
 
     statusChoice = ['Aik still hasn\'t played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role',
@@ -1428,9 +1479,7 @@ async def changeStatus():
                     'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm',
                     'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters']
 
-    while True:
-        await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
-        await asyncio.sleep(300)
+    await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
 
 
 bot.run(token)
