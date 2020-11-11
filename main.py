@@ -1406,7 +1406,7 @@ async def help(ctx):
 @tasks.loop(hours=24)
 async def autoBackup():
     print("Running Backup")
-    await runBackup()
+   # await runBackup()
 
 
 @bot.command(name='forcebackup')
@@ -1418,6 +1418,7 @@ async def _forceBackup(ctx):
 async def runBackup():
     global database
     global backupOngoing
+    global conn
 
     backupOngoing = True
 
@@ -1439,7 +1440,7 @@ async def runBackup():
     dBackup.SetContentFile(database)
     dBackup.Upload()
 
-    create_connection(database)
+    conn = create_connection(database)
     print("Reopening Database Connection...")
 
     timerEnd = time.perf_counter()
