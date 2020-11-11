@@ -1406,7 +1406,7 @@ async def help(ctx):
 @tasks.loop(hours=24)
 async def autoBackup():
     print("Running Backup")
-   # await runBackup()
+    await runBackup()
 
 
 @bot.command(name='forcebackup')
