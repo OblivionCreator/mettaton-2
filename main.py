@@ -3,6 +3,8 @@ import glob
 import math
 import os
 import random
+from pathlib import Path
+
 from discord.ext import tasks
 from datetime import datetime
 import discord
@@ -68,7 +70,33 @@ async def on_ready():
 def create_connection(db_file):
     conn = None
     try:
-        conn = sqlite3.connect(db_file)
+
+        file = Path(database)
+
+        if file.is_file():
+            conn = sqlite3.connect(db_file)
+        else:
+            print("Database does not exist! Generating new Database")
+            conn = sqlite3.connect(db_file)
+            cur = conn.cursor()
+            sql = '''CREATE TABLE "charlist" (
+    "charID"    INTEGER NOT NULL UNIQUE,
+    "owner"    TEXT NOT NULL,
+    "status"    TEXT NOT NULL,
+    "name"    TEXT NOT NULL,
+    "age"    TEXT,
+    "gender"    TEXT,
+    "abil"    TEXT,
+    "appear"    TEXT,
+    "backg"    TEXT,
+    "person"    TEXT,
+    "prefilled"    TEXT,
+    "misc"    TEXT,
+    PRIMARY KEY("charID")
+)'''
+            cur.execute(sql)
+            conn.commit()
+
         print(sqlite3.version)
     except Error as e:
         print("Connection Failed! - " + e)
@@ -124,10 +152,10 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
     """
 
     if charID == '':
-        character.append('{}')
+        charFinal = character + ('{}',)
         sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled,misc) VALUES(?,?,?,?,?,?,?,?,?,?,?)'''
         cur = conn.cursor()
-        cur.execute(sql, character)
+        cur.execute(sql, charFinal)
         conn.commit()
         print(cur.lastrowid)
         return cur.lastrowid
@@ -392,8 +420,11 @@ async def reRegister(ctx, charID):
             try:
                 await user.send(embed=previewChar(cfields=cfields, prefilled=None, name=cfields['name']))
             except:
-                previewTxt = charToTxt(0, ctx.author.id, 'Preview', cfields["name"], cfields["age"], cfields["gender"], cfields["abilities/tools"], cfields["appearance"], cfields["background"], cfields["personality"], cfields["prefilled"], ctx, '')
-                await user.send("Your character is too long to preview, so I have dumped it to a file!", file=discord.File(previewTxt))
+                previewTxt = charToTxt(0, ctx.author.id, 'Preview', cfields["name"], cfields["age"], cfields["gender"],
+                                       cfields["abilities/tools"], cfields["appearance"], cfields["background"],
+                                       cfields["personality"], cfields["prefilled"], ctx, '')
+                await user.send("Your character is too long to preview, so I have dumped it to a file!",
+                                file=discord.File(previewTxt))
         elif selector == 'done':
 
             await user.send(
@@ -710,8 +741,6 @@ async def _set(ctx, charID, field, *, message: str):
     Status (GM ONLY)
     '''
 
-
-
     if field.lower() in fields:
         fSan = convertField(field.lower())
 
@@ -818,6 +847,7 @@ async def _custom(ctx, charID='', field='', *, message: str):
 
     await channel.send(
         f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
+
 
 async def _custom_error(ctx, args):
     await ctx.send("Unable to set a custom field to a blank value!")
@@ -1456,7 +1486,7 @@ async def runBackup():
     print("Reopening Database Connection...")
 
     timerEnd = time.perf_counter()
-    await channel.send(f"Backup Complete in {str((timerEnd-timerStart))[0:5]} seconds.")
+    await channel.send(f"Backup Complete in {str((timerEnd - timerStart))[0:5]} seconds.")
 
     backupOngoing = False
     await statusChanger()
