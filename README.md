@@ -4,7 +4,7 @@ WIP For Mettaton 2.0
 FILES YOU NEED TO PROVIDE TO GET BOT TO FUNCTION:
 
 token.txt - The Bot Token on Discord.
-client_secrets.json - For automatic backups to function, you will need to define a client_secrets.json from the Google Drive API
+client_secrets.json - For automatic backups to function, you will need to define a client_secrets.json from the Google Drive API<br>
 .config - The bot will create this file. Use rp!setgmchannel to configure where the bot sends any GM based alerts.
 
 The bot currently works off of 3 role names: - Please ensure these roles exist or the bot will not function correctly!
