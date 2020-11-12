@@ -27,7 +27,13 @@ backupOngoing = False
 gauth = GoogleAuth()
 gauth.LoadCredentialsFile("credentials.txt")
 if gauth.credentials is None:
+
+    gauth.GetFlow()
+    gauth.flow.params.update({'access_type': 'offline'})
+    gauth.flow.params.update({'approval_prompt': 'force'})
+
     gauth.LocalWebserverAuth()
+
 elif gauth.access_token_expired:
     gauth.Refresh()
 else:
@@ -109,7 +115,7 @@ async def block_during_backup(ctx):
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
                   status='Pending', charID=''):
-    character = [owner, status, name, age, gender, abil, appear, backg, person, prefilled]
+    character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled)
 
     """
     :param conn:
@@ -373,7 +379,7 @@ async def reRegister(ctx, charID):
             fullFields = f"{fullFields} `{i.capitalize()}`,"
 
         await user.send(
-            f"What field would you like to modify? Current Fields:\n{fullFields}\n You can also add one of the following fields that are not currently present within your application:\n" + blankFields)
+            f"What field would you like to modify? Current Fields:\n{fullFields}\n You can also add one of the following fields that are not currently present within your application:\n" + blankFields + "\nTo preview your character, type `preview`.")
 
         field = await getdm(ctx)
         selector = field.lower()
@@ -382,6 +388,12 @@ async def reRegister(ctx, charID):
             await user.send(f"What would you like field {selector.capitalize()} to say?")
             cfields[selector] = await getdm(ctx)
             await user.send(f"Field {selector.capitalize()} has been changed.")
+        elif selector == 'preview':
+            try:
+                await user.send(embed=previewChar(cfields=cfields, prefilled=None, name=cfields['name']))
+            except:
+                previewTxt = charToTxt(0, ctx.author.id, 'Preview', cfields["name"], cfields["age"], cfields["gender"], cfields["abilities/tools"], cfields["appearance"], cfields["background"], cfields["personality"], cfields["prefilled"], ctx, '')
+                await user.send("Your character is too long to preview, so I have dumped it to a file!", file=discord.File(previewTxt))
         elif selector == 'done':
 
             await user.send(
@@ -698,6 +710,8 @@ async def _set(ctx, charID, field, *, message: str):
     Status (GM ONLY)
     '''
 
+
+
     if field.lower() in fields:
         fSan = convertField(field.lower())
 
@@ -735,10 +749,7 @@ async def _set(ctx, charID, field, *, message: str):
         await ctx.send("You do not have permission to modify this character!")
         return
 
-    if fSan == 'misc':
-        ctx.send("Custom Field support using rp!set has been deprecated. Please use rp!custom instead!")
-    else:
-        _setSQL(icharID, fSan, message)
+    _setSQL(icharID, fSan, message)
 
     if message == '':
         await ctx.send(f"Field {field.capitalize()} has been deleted.")
@@ -746,9 +757,6 @@ async def _set(ctx, charID, field, *, message: str):
         await ctx.send(f"Field {field.capitalize()} has been changed.")
 
     channel = bot.get_channel(GMChannel())
-
-    if message == '':
-        message == 'Deleted'
 
     await channel.send(
         f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
@@ -806,6 +814,10 @@ async def _custom(ctx, charID='', field='', *, message: str):
 
     await ctx.send(f"Custom field {field} has been deleted.")
 
+    channel = bot.get_channel(GMChannel())
+
+    await channel.send(
+        f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
 
 async def _custom_error(ctx, args):
     await ctx.send("Unable to set a custom field to a blank value!")
