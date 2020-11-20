@@ -513,8 +513,7 @@ async def alertGMs(ctx, charID, resub=False):
         charFile = open(filePath, 'r')
 
         await channel.send(
-            f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n")
-        await channel.send(file=discord.File(filePath))
+            f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n", file=discord.File(filePath))
 
 
 def getMember(owner, ctx):
@@ -1517,7 +1516,7 @@ async def changeStatus():
 async def statusChanger():
     status = discord.Status.online
 
-    statusChoice = ['Aik still hasn\'t played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role',
+    statusChoice = ['Aik has Played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role',
                     'old enough for soriel',
                     'haha he smope weef', 'SHUP', 'AMA', '...meme?', 'role!unban', '1000 blood', 'blame AIK',
                     'blame Bliv', 'blame Samario', 'blame Wisty', 'Venom is a Furry', 'blankets = lewd???',
