@@ -616,7 +616,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 for name, value in customFields.items():
                     print(name)
                     embedVar.add_field(name=name, value=value, inline=False)
-                    miscData = f"{miscData}\n{i}: {value}"
+                    miscData = f"{miscData}\n{name}: {value}"
             except:
                 pass
 
