@@ -740,6 +740,8 @@ async def _set(ctx, charID, field, *, message: str):
     Status (GM ONLY)
     '''
 
+    alertChannel = bot.get_channel(GMChannel())
+
     if field.lower() in fields:
         fSan = convertField(field.lower())
 
@@ -784,9 +786,7 @@ async def _set(ctx, charID, field, *, message: str):
     else:
         await ctx.send(f"Field {field.capitalize()} has been changed.")
 
-    channel = bot.get_channel(GMChannel())
-
-    await channel.send(
+    await alertChannel.send(
         f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
 
 
@@ -799,6 +799,9 @@ def _setSQL(charID, field, content):
 
 
 async def _custom(ctx, charID='', field='', *, message: str):
+
+    alertChannel = bot.get_channel(GMChannel())
+
     if charID.isnumeric():
         icharID = int(charID)
     else:
@@ -838,14 +841,14 @@ async def _custom(ctx, charID='', field='', *, message: str):
     _setSQL(icharID, "misc", miscData)
     if fieldDel == False:
         await ctx.send(f"Custom field {field} has been set.")
+        await alertChannel.send(
+            f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
         return
 
     await ctx.send(f"Custom field {field} has been deleted.")
 
-    channel = bot.get_channel(GMChannel())
-
-    await channel.send(
-        f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
+    await alertChannel.send(
+        f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been deleted.")
 
 
 async def _custom_error(ctx, args):
