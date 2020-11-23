@@ -406,8 +406,14 @@ async def reRegister(ctx, charID):
         for i in fullList:
             fullFields = f"{fullFields} `{i.capitalize()}`,"
 
+        presfields = ''
+
+        if not blankFields == '':
+            presfields = f"\nYou can also add one of the following fields that are not currently present within your application:\n {blankFields}"
+
+
         await user.send(
-            f"What field would you like to modify? Current Fields:\n{fullFields}\n You can also add one of the following fields that are not currently present within your application:\n" + blankFields + "\nTo preview your character, type `preview`.")
+            f"What field would you like to modify? Current Fields:\n{fullFields}" + presfields + "\nTo preview your character, type `preview`. If you are done, type `done` to resubmit your character.")
 
         field = await getdm(ctx)
         selector = field.lower()
@@ -503,12 +509,18 @@ async def alertGMs(ctx, charID, resub=False):
 
         charData = _getCharDict(charID)
 
+        charJS = json.loads(charData["misc"])
+        charSTR = ''
+
+        for name, value in charJS.items():
+            charSTR = f"{charSTR}\n{name}:{value}"
+
         filePath = charToTxt(charID=charData["charID"], owner=charData["Owner"], status=charData["Status"],
                              name=charData["Name"], age=charData["Age"], gender=charData["Gender"],
                              abil=charData["Abilities/Tools"],
                              appear=charData["Appearance"], backg=charData["Background"],
                              person=charData["Personality"], prefilled=charData["Prefilled Application"],
-                             misc=charData["misc"], ctx=ctx)
+                             misc=charSTR, ctx=ctx)
 
         charFile = open(filePath, 'r')
 
@@ -1155,7 +1167,7 @@ async def _registerChar(ctx, user):
 
     Registers a new character, or resubmits an existing character if an ID is input.
 
-    Guides you through the command. Please see #rules and #policy for more help.'''
+    Guides you through the command. Pleas_alere see #rules and #policy for more help.'''
 
     isRegistering = True
 
