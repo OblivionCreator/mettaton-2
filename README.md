@@ -2,7 +2,7 @@
 
 PREREQUISITES:
 
-discord.py - Runs the bot
+discord.py - Runs the bot<br>
 pyDrive - Runs automated backups every 24hr
 
 FILES YOU NEED TO PROVIDE TO GET BOT TO FUNCTION:
