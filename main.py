@@ -501,9 +501,11 @@ async def alertGMs(ctx, charID, resub=False):
     else:
         isResubmit = ''
 
+    GMRole = discord.utils.get(ctx.guild.roles, name="Gamemaster")
+
     try:
         await channel.send(
-            f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
+            f"<@&{GMRole.id}>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
             embed=embedC)
     except:
 
@@ -723,12 +725,6 @@ def _getCharDict(charID=0):
         return 'INVALID CHARACTER'
 
     return charData
-
-
-async def fuckoffloki(ctx):
-    for i in range(5):
-        await ctx.author.send("LOKI PLS")
-    await ctx.author.kick()
 
 
 @bot.command(name='set', aliases=['setprop'])
@@ -1488,13 +1484,19 @@ async def runBackup():
     print("Closing Database Connection...")
     close_connection(database)
 
-    folderID = '1Wzt7aGfXhcQDeoZMIilmZUFZQWvC582H'
+    folderName = 'Mettaton Backups'
+
+    folders = drive.ListFile(
+        {
+            'q': "title='" + folderName + "' and mimeType='application/vnd.google-apps.folder' and trashed=false"}).GetList()
 
     backupName = f"mttchars-{date.strftime('%Y-%m-%d %H:%M:%S')}"
 
-    dBackup = drive.CreateFile({'title': backupName, "parents": [{"id": folderID}]})
-    dBackup.SetContentFile(database)
-    dBackup.Upload()
+    for folder in folders:
+        if folder['title'] == folderName:
+            dBackup = drive.CreateFile({'title': backupName, "parents": [{"id": folder['id']}]})
+            dBackup.SetContentFile(database)
+            dBackup.Upload()
 
     conn = create_connection(database)
     print("Reopening Database Connection...")
@@ -1541,7 +1543,8 @@ async def statusChanger():
                     'You have OneShot at this.', 'What plant is Lotus?', 'Default Dance', 'Mystiri is All',
                     'This server has been murder free for 0 Months', 'Pending', 'Vampire Celery', 'Bugsonas Are Real',
                     'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm',
-                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters']
+                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters',
+                    'Samario\'s Deviantart Addiction']
 
     await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
 
