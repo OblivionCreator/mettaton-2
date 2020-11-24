@@ -1,5 +1,9 @@
 # mettaton-2
-WIP For Mettaton 2.0
+
+PREREQUISITES:
+
+discord.py - Runs the bot
+pyDrive - Runs automated backups every 24hr
 
 FILES YOU NEED TO PROVIDE TO GET BOT TO FUNCTION:
 
@@ -15,6 +19,6 @@ The bot currently works off of 3 role names: - Please ensure these roles exist o
 
 'NPC' - The bot will ignore any users with this role.
 
-This bot is free to use and licensed under Creative Commons BY-NC-SA
 
+This bot is free to use and licensed under Creative Commons BY-NC-SA
 You may remix, adapt, and build upon this bot non-commercially, as long as you credit me and any derivative works are also licensed under CC BY-NC-SA
