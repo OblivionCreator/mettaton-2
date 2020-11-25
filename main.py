@@ -1156,6 +1156,31 @@ def previewChar(cfields=None, prefilled=None, name=None):
     return embedVar
 
 
+@bot.command()
+async def invite(ctx):
+    await ctx.send("This bot is a private bot and is not currently available to invite.\n"
+                   "If you wish to run it yourself, you can download the source code here:\n"
+                   "https://github.com/OblivionCreator/mettaton-2.py\n"
+                   "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.")
+
+
+canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
+             "chara", "muffet", "pepsi man", "toriel"]  # To do - Make this into a function.
+
+
+async def canonCheck(response, user):
+    global canonDeny
+    response = response.lower()
+
+    if any(canon_char in response for canon_char in canonDeny):  # Thanks Atlas!
+        await user.send(
+            "**Canon Characters are not allowed. Please read the <#697160109700284456> and <#697153009599119493>**\n"
+            "Exiting Character Creation.")
+        currentlyRegistering.remove(user.id)
+        return True
+    return False
+
+
 async def _registerChar(ctx, user):
     '''USAGE:
     rp!register
@@ -1196,20 +1221,9 @@ async def _registerChar(ctx, user):
                 "Great! Let's start filling out your character. First of all, what is your characters name?")
 
             response = await getdm(ctx)
-            if response.lower() == 'exit':
-                await user.send("Exiting Character Creation!")
-                isRegistering = False
-                currentlyRegistering.remove(user.id)
+
+            if await canonCheck(response, user):
                 return
-            cfields["name"] = response  # Gets the raw message from response
-
-            canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
-                         "chara", "muffet", "pepsi man", "toriel"]  # To do - Make this into a function.
-
-            if response.lower() in canonDeny:
-                await user.send(
-                    "**Reminder! Canon Characters are not allowed. Please read the <#697160109700284456> and <#697153009599119493>**")
-                cfields["name"] = f"{response} - CANON CHARACTER"
 
             await user.send("Now that your character has a name, let's start filling out some details.\n"
                             "What field would you like to edit?\n"
@@ -1318,6 +1332,10 @@ async def _registerChar(ctx, user):
             await user.send(
                 "Great! First of all, Before submitting your application, what is your characters name?")
             response = await getdm(ctx)
+
+            if await canonCheck(response, user):
+                return
+
             if response.lower() == 'exit':
                 await user.send("Exiting Character Creation!")
                 isRegistering = False
@@ -1343,6 +1361,7 @@ async def _registerChar(ctx, user):
                     "Fields: `Name`, `Prefilled Application`")
                 response = await getdm(ctx)
                 selector = response.lower()
+
                 if selector == 'exit':
                     await user.send("Exiting Character Creation!")
                     isRegistering = False
@@ -1370,6 +1389,10 @@ async def _registerChar(ctx, user):
                 elif selector == 'name':
                     await user.send("What would you like the name to be?")
                     response = await getdm(ctx)
+
+                    if await canonCheck(response, user):
+                        return
+
                     if response.lower() == 'exit':
                         await user.send("Exiting Character Creation!")
                         isRegistering = False
