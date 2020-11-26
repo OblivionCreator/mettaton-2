@@ -765,6 +765,8 @@ async def _set(ctx, charID, field, *, message: str):
         if fSan == 'name':
             await ctx.send("You can not remove a characters' name!")
             return
+        elif fSan == 'misc':
+            message = '{}'
 
     if fSan == 'owner' or fSan == 'status':
         if await checkGM(ctx) is False:
