@@ -1289,6 +1289,8 @@ async def _registerChar(ctx, user):
                     if await canonCheck(response, user) and nameSelect is True:
                         return
 
+                    nameSelect = False
+
                     if response.lower() == 'exit':
                         await user.send("Exiting Character Creation!")
                         isRegistering = False
