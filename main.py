@@ -435,7 +435,6 @@ async def reRegister(ctx, charID):
 
             await user.send(
                 f"Your character (ID {charID}) has been resubmitted and will be reviewed at the next available oppurtunity.")
-
             resub = await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
                                   gender=cfields["gender"],
                                   abil=cfields["abilities/tools"],
@@ -1227,6 +1226,8 @@ async def _registerChar(ctx, user):
             if await canonCheck(response, user):
                 return
 
+            cfields['name'] = response
+
             await user.send("Now that your character has a name, let's start filling out some details.\n"
                             "What field would you like to edit?\n"
                             "Remaining fields to specify: `Age`, `Gender`, `Abilities/Tools`, `Appearance`, `Background`, `Personality`\n"
@@ -1250,6 +1251,7 @@ async def _registerChar(ctx, user):
                             "You character is not complete! Please fill the remaining fields before trying to submit your character.")
                     else:
                         submitChar = True
+                        charcomplete = True
 
                         owner = ctx.author.id
                         prefilled = None
