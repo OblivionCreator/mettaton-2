@@ -230,31 +230,35 @@ async def _setGMCChannel(ctx):
 
 
 @bot.command()
-async def approve(ctx, charID, *args):
+async def approve(ctx, charID, *, reason: str):
     '''GM ONLY - Approves a specified character.'''
-    reason = ' '.join(args)
     await _changeStatus(ctx, charID=charID, charStatus='Approved', reason=reason)
 
 
 @bot.command()
-async def pending(ctx, charID, *args):
+async def pending(ctx, charID, *, reason: str):
     '''GM ONLY - Sets a specified character to Pending.'''
-    reason = ' '.join(args)
     await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=reason)
 
 
 @bot.command()
-async def deny(ctx, charID, *args):
+async def deny(ctx, charID, *, reason: str):
     '''GM ONLY - Denies a specified character.'''
-    reason = ' '.join(args)
     await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=reason)
 
 
 @bot.command()
-async def kill(ctx, charID, *args):
+async def kill(ctx, charID, *, reason: str):
     '''GM ONLY - Kills a specified character.'''
-    reason = ' '.join(args)
     await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=reason)
+
+
+@approve.error
+@pending.error
+@deny.error
+@kill.error
+async def _approveE(ctx, charID):
+    await ctx.send("You need to give a reason to change the status of a character!")
 
 
 async def checkGM(ctx):
@@ -293,14 +297,11 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
         await ctx.send("You do not have permission to do this!")
         return
 
-    try:
-        if charID.isnumeric():
-            charInt = int(charID)
-        else:
-            await ctx.send("That is not a valid character ID!")
-            return
-    except:
-        charInt = charID
+    if charID.isnumeric():
+        charInt = int(charID)
+    else:
+        await ctx.send("That is not a valid character ID!")
+        return
 
     cursor = conn.cursor()
     sql = '''UPDATE charlist SET status = ? WHERE charID is ?'''
