@@ -1493,11 +1493,12 @@ async def help(ctx):
 
 ## Auto Backup ##
 
-@tasks.loop(hours=24)
+@tasks.loop(seconds=60)
 async def autoBackup():
-    print("Running Backup")
-    await runBackup()
-
+    t = datetime.now()
+    c_t = t.strftime("%H:%M")
+    if c_t == "00:00":
+        await runBackup()
 
 @bot.command(name='forcebackup')
 @commands.is_owner()
