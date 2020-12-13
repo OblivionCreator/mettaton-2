@@ -140,6 +140,14 @@ async def globally_block_roles(ctx):
 async def block_during_backup(ctx):
     return not backupOngoing
 
+@bot.check
+async def block_help(ctx):
+    if ctx.channel.name == 'help':
+        await ctx.send(f"This is the help channel. Please go to #bots for any bot commands, <@{ctx.author.id}>")
+        await ctx.message.delete()
+        return False
+    else:
+        return True
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
                   status='Pending', charID=''):
@@ -1504,7 +1512,6 @@ async def autoBackup():
 @commands.is_owner()
 async def _forceBackup(ctx):
     await runBackup()
-
 
 async def runBackup():
     global database
