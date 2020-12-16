@@ -1085,7 +1085,7 @@ async def _undelete(ctx, charID):
 
     cursor.execute("UPDATE charlist SET status = 'Pending' WHERE charID is ?", [icharID])
     conn.commit()
-    ctx.send(f"Character {icharID} has been recovered.")
+    await ctx.send(f"Character {icharID} has been recovered.")
 
 
 def charPermissionCheck(ctx, ownerID):
@@ -1175,7 +1175,8 @@ async def invite(ctx):
 
 
 canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
-             "chara", "muffet", "pepsi man", "toriel"]  # To do - Make this into a function.
+             "chara", "muffet", "pepsi man", "toriel", "kris", "ralsei", "shrek", "Betty",
+             "Fallenfire"]  # To do - Make this into a function.
 
 
 async def canonCheck(response, user):
