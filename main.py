@@ -1176,7 +1176,7 @@ async def invite(ctx):
 
 canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
              "chara", "muffet", "pepsi man", "toriel", "kris", "ralsei", "shrek", "betty",
-             "Fallenfire"]  # To do - Make this into a function.
+             "fallenfire"]  # To do - Make this into a function.
 
 
 async def canonCheck(response, user):
