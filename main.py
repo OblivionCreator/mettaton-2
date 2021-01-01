@@ -44,6 +44,44 @@ gauth.SaveCredentialsFile("credentials.txt")
 
 drive = GoogleDrive(gauth)
 
+
+async def configLoader():
+    try:
+        with open('.config') as file:
+            print("Config Loaded!")
+
+            conf = getConfig()
+
+            gmchannel = bot.get_channel(GMChannel())
+            logchannel = bot.get_channel(LogChannel())
+
+            validGMChannel = False
+
+            try:
+                await gmchannel.send("Bot has loaded successfully.")
+            except:
+                validGMChannel = True
+
+            try:
+                await logchannel.send("Logging has loaded successfully.")
+            except:
+                if validGMChannel:
+                    await bot.get_channel(GMChannel())
+
+
+    except (FileNotFoundError, IOError):
+        file = open('.config', 'x')
+
+        configDict = {
+            'gmchannel': 0,
+            'logchannel': 0
+        }
+
+        cfgJson = json.dumps(configDict)
+
+        file.write(cfgJson)
+
+
 bot = commands.Bot(
     command_prefix=['rp!', 'sans!', 'mtt!', 'arik ', 'bliv pls ', 'bliv ', 'https://en.wikipedia.org/wiki/Insanity ',
                     'Rp!'],
@@ -52,17 +90,26 @@ bot.remove_command("help")
 currentlyRegistering = []
 
 
-def GMChannel():
-    with open('.config') as file:
-        channel = int(file.read())
+def getConfig():
+    with open('.config', 'r') as file:
+        jsonOBJ = json.load(file)
         file.close()
+    return jsonOBJ
 
-    return channel
+
+def GMChannel():
+    conf = getConfig()
+    return int(conf["gmchannel"])
+
+
+def LogChannel():
+    conf = getConfig()
+    return int(conf["logchannel"])
 
 
 @bot.event
 async def on_ready():
-    # await (bot.get_channel(GMChannel)).send("Mettaton 2.0.5 Loaded!")
+    await configLoader()
     changeStatus.start()
     autoBackup.start()
 
@@ -230,11 +277,31 @@ async def _setGMCChannel(ctx):
     if "Gamemaster" not in role_names:
         await ctx.send("You do not have permission to change the GM Channel!")
         return
-    with open('.config', 'w') as outfile:
-        outfile.write(str(ctx.message.channel.id))
-        outfile.close()
+
+    updateConfig('gmchannel', ctx.channel.id)
 
     await ctx.send("Successfully set GM Channel!")
+
+
+@bot.command(name='setLogChannel')
+async def _setLogChannel(ctx):
+    if not await checkGM(ctx):
+        await ctx.send("You do not have permission to change the Log Channel!")
+        return
+
+    updateConfig('logchannel', ctx.channel.id)
+    await ctx.send("Successfully set logging channel!")
+
+
+def updateConfig(field, value):
+    with open('.config', 'r') as file:
+        jsonOBJ = json.load(file)
+        file.close()
+
+    jsonOBJ[field] = value
+
+    with open('.config', 'w') as file:
+        json.dump(jsonOBJ, file)
 
 
 @bot.command()
@@ -310,6 +377,9 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
     else:
         await ctx.send("That is not a valid character ID!")
         return
+
+    logChannel = bot.get_channel(LogChannel())
+    await logChannel.send(f"{ctx.author} set character ID {charInt} to status {charStatus}")
 
     cursor = conn.cursor()
     sql = '''UPDATE charlist SET status = ? WHERE charID is ?'''
@@ -756,7 +826,7 @@ async def _set(ctx, charID, field, *, message: str):
     Status (GM ONLY)
     '''
 
-    alertChannel = bot.get_channel(GMChannel())
+    alertChannel = bot.get_channel(LogChannel())
 
     if field.lower() in fields:
         fSan = convertField(field.lower())
@@ -817,8 +887,7 @@ def _setSQL(charID, field, content):
 
 
 async def _custom(ctx, charID='', field='', *, message: str):
-
-    alertChannel = bot.get_channel(GMChannel())
+    alertChannel = bot.get_channel(LogChannel())
 
     if charID.isnumeric():
         icharID = int(charID)
@@ -1187,6 +1256,12 @@ async def canonCheck(response, user):
         await user.send(
             "**Canon Characters are not allowed. Please read the <#697160109700284456> and <#697153009599119493>**\n"
             "Exiting Character Creation.")
+
+        logChannel = bot.get_channel(LogChannel())
+
+        await logChannel.send(
+            f"{user.id} ({user.id}) tried submitting a canon character! (Name {response} matched one or more characters in the deny list.)")
+
         currentlyRegistering.remove(user.id)
         return True
     return False
@@ -1590,8 +1665,7 @@ async def statusChanger():
                     'You have OneShot at this.', 'What plant is Lotus?', 'Default Dance', 'Mystiri is All',
                     'This server has been murder free for 0 Months', 'Pending', 'Vampire Celery', 'Bugsonas Are Real',
                     'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm',
-                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters',
-                    'Samario\'s Deviantart Addiction']
+                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters']
 
     await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
 
