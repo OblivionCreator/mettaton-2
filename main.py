@@ -18,7 +18,7 @@ import time
 import json
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
-
+from discord import HTTPException
 from discord.utils import get
 
 intents = discord.Intents.default()
@@ -146,7 +146,7 @@ def create_connection(db_file):
 
         print(sqlite3.version)
     except Error as e:
-        print("Connection Failed! - " + e)
+        print(f"Connection Failed! - " + {str(e)})
 
     return conn
 
@@ -187,6 +187,7 @@ async def globally_block_roles(ctx):
 async def block_during_backup(ctx):
     return not backupOngoing
 
+
 @bot.check
 async def block_help(ctx):
     if ctx.channel.name == 'help':
@@ -195,6 +196,7 @@ async def block_help(ctx):
         return False
     else:
         return True
+
 
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
                   status='Pending', charID=''):
@@ -490,7 +492,6 @@ async def reRegister(ctx, charID):
         if not blankFields == '':
             presfields = f"\nYou can also add one of the following fields that are not currently present within your application:\n {blankFields}"
 
-
         await user.send(
             f"What field would you like to modify? Current Fields:\n{fullFields}" + presfields + "\nTo preview your character, type `preview`. If you are done, type `done` to resubmit your character.")
 
@@ -585,7 +586,10 @@ async def alertGMs(ctx, charID, resub=False):
         await channel.send(
             f"<@&{GMRole.id}>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
             embed=embedC)
-    except:
+    except HTTPException as e:
+
+        await logHandler(
+            f"Unable to post raw character data on submission. Compressing to text file.\nFull Exception:\n{e}")
 
         charData = _getCharDict(charID)
 
@@ -605,7 +609,11 @@ async def alertGMs(ctx, charID, resub=False):
         charFile = open(filePath, 'r')
 
         await channel.send(
-            f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n", file=discord.File(filePath))
+            f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
+            file=discord.File(filePath))
+    except Exception as e:
+        await logHandler(
+            f"There was a fatal error trying to alert upon registration of a character. Full Exception:\n{e}")
 
 
 def getMember(owner, ctx):
@@ -620,9 +628,9 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
 
     charFile = open(path, 'x')
 
-    charTXT = (f"Character Information for Character ID {charID}\n" \
-               f"Owner: {getMember(owner, ctx) or owner + ' (Owner has left server.)'}\n" \
-               f"Status: {status}\n" \
+    charTXT = (f"Character Information for Character ID {charID}\n"
+               f"Owner: {getMember(owner, ctx) or owner + ' (Owner has left server.)'}\n"
+               f"Status: {status}\n"
                f"Name: {name}\n")
     if age != '': charTXT = charTXT + f"Age: {age}\n"
     if gender != '': charTXT = charTXT + f"Gender: {gender}\n"
@@ -1575,6 +1583,13 @@ async def help(ctx):
         "For help, please check out the Wiki on Github!\nhttps://github.com/OblivionCreator/mettaton-2.py/wiki")
 
 
+## Log Handling ##
+
+async def logHandler(message):
+    channel = bot.get_channel(LogChannel())
+    await channel.send(message)
+
+
 ## Auto Backup ##
 
 @tasks.loop(seconds=60)
@@ -1584,10 +1599,12 @@ async def autoBackup():
     if c_t == "00:00":
         await runBackup()
 
+
 @bot.command(name='forcebackup')
 @commands.is_owner()
 async def _forceBackup(ctx):
     await runBackup()
+
 
 async def runBackup():
     global database
