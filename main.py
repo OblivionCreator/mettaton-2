@@ -1372,17 +1372,13 @@ async def _registerChar(ctx, user):
                     except:
                         await user.send("This character is too long to preview!")
                 elif selector in cfields:
-                    if selector.lower() == 'name':
-                        nameSelect = True
-                    else:
-                        nameSelect = False
                     await user.send("What would you like field `" + selector.capitalize() + "` to say?")
                     response = await getdm(ctx)
 
-                    if await canonCheck(response, user) and nameSelect is True:
-                        return
-
-                    nameSelect = False
+                    if selector.lower() == 'name':
+                        if await canonCheck(response, user):
+                            break
+                            return
 
                     if response.lower() == 'exit':
                         await user.send("Exiting Character Creation!")
