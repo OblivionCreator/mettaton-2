@@ -1268,7 +1268,7 @@ async def canonCheck(response, user):
         logChannel = bot.get_channel(LogChannel())
 
         await logChannel.send(
-            f"{user.id} ({user.id}) tried submitting a canon character! (Name {response} matched one or more characters in the deny list.)")
+            f"{user} ({user.id}) tried submitting a canon character! (Name {response} matched one or more characters in the deny list.)")
 
         currentlyRegistering.remove(user.id)
         return True
