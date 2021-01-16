@@ -1248,12 +1248,12 @@ async def invite(ctx):
     await ctx.send("This bot is a private bot and is not currently available to invite.\n"
                    "If you wish to run it yourself, you can download the source code here:\n"
                    "https://github.com/OblivionCreator/mettaton-2.py\n"
-                   "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.")
+                   "`THIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.`")
 
 
 canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
              "chara", "muffet", "pepsi man", "toriel", "kris", "ralsei", "shrek", "betty",
-             "fallenfire"]  # To do - Make this into a function.
+             "fallenfire", "gaster"]  # To do - Make this into a function.
 
 
 async def canonCheck(response, user):
@@ -1678,7 +1678,8 @@ async def statusChanger():
                     'You have OneShot at this.', 'What plant is Lotus?', 'Default Dance', 'Mystiri is All',
                     'This server has been murder free for 0 Months', 'Pending', 'Vampire Celery', 'Bugsonas Are Real',
                     'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm',
-                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters']
+                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters',
+                    'Dead Parents', 'with the edge.']
 
     await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
 
@@ -1686,8 +1687,5 @@ async def statusChanger():
 bot.run(token)
 close_connection(database)
 
-print("If this runs, something dun fucked up")
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
-
-# Consider: Input Validation - Stop from doing both prefilled & other
+print(
+    "Bot Shutting Down. This message should only show if you have stopped the bot manually. If you see this message and have not shut down the bot on purpose, please raise an issue on GitHub with as much information as possible!")
