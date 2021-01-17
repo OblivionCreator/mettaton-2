@@ -277,22 +277,22 @@ async def _setGMCChannel(ctx):
     role_names = [role.name for role in ctx.author.roles]
 
     if "Gamemaster" not in role_names:
-        await ctx.send("You do not have permission to change the GM Channel!")
+        await ctx.reply("You do not have permission to change the GM Channel!")
         return
 
     updateConfig('gmchannel', ctx.channel.id)
 
-    await ctx.send("Successfully set GM Channel!")
+    await ctx.reply("Successfully set GM Channel!")
 
 
 @bot.command(name='setLogChannel')
 async def _setLogChannel(ctx):
     if not await checkGM(ctx):
-        await ctx.send("You do not have permission to change the Log Channel!")
+        await ctx.reply("You do not have permission to change the Log Channel!")
         return
 
     updateConfig('logchannel', ctx.channel.id)
-    await ctx.send("Successfully set logging channel!")
+    await ctx.reply("Successfully set logging channel!")
 
 
 def updateConfig(field, value):
@@ -335,7 +335,7 @@ async def kill(ctx, charID, *, reason: str):
 @deny.error
 @kill.error
 async def _approveE(ctx, charID):
-    await ctx.send("You need to give a reason to change the status of a character!")
+    await ctx.reply("You need to give a reason to change the status of a character!")
 
 
 async def checkGM(ctx):
@@ -358,7 +358,7 @@ async def alertUser(ctx, charID, status, reason):
     user = ctx.guild.get_member(int(ownerID))
 
     if user == None:
-        await ctx.send(
+        await ctx.reply(
             f"I was unable to send a message to the owner of Character {charID}. User either does not exist or has left the server.")
         return
 
@@ -366,18 +366,18 @@ async def alertUser(ctx, charID, status, reason):
         await user.send(
             f"The status of character ID **{charID}** (Name: **{name[0:100]}**) has been set to `{status}` by {ctx.author.mention} for:\n{reason}")
     except:
-        ctx.send(f"I was unable to send a message to the owner of Character {charID}. They may have their DMs closed!")
+        ctx.reply(f"I was unable to send a message to the owner of Character {charID}. They may have their DMs closed!")
 
 
 async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
     if not await checkGM(ctx):
-        await ctx.send("You do not have permission to do this!")
+        await ctx.reply("You do not have permission to do this!")
         return
 
     if charID.isnumeric():
         charInt = int(charID)
     else:
-        await ctx.send("That is not a valid character ID!")
+        await ctx.reply("That is not a valid character ID!")
         return
 
     logChannel = bot.get_channel(LogChannel())
@@ -396,7 +396,7 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
         await user.add_roles(role)
 
     await alertUser(ctx, charInt, charStatus, reason)
-    await ctx.send(f"Character `ID: {charID}` has been set to `{charStatus}`")
+    await ctx.reply(f"Character `ID: {charID}` has been set to `{charStatus}`")
 
 
 async def reRegister(ctx, charID):
@@ -406,20 +406,20 @@ async def reRegister(ctx, charID):
     owner = cursor.fetchone()
 
     if owner is None:
-        await ctx.send("That character does not exist!")
+        await ctx.reply("That character does not exist!")
         return
     else:
         ownerP = owner[0]
 
     if int(ownerP) != ctx.author.id:
         print(ownerP)
-        await ctx.send("You do not own this character!")
+        await ctx.reply("You do not own this character!")
         return
 
     charData = _getCharDict(int(charID))
 
     if charData == 'INVALID CHARACTER':
-        ctx.send("That is not a valid character!")
+        ctx.reply("That is not a valid character!")
 
     cfields = {
         "name": '',
@@ -457,12 +457,12 @@ async def reRegister(ctx, charID):
         try:
             await ctx.author.send("Here is your character currently.", file=discord.File(filePath))
         except:
-            await ctx.send("Unable to send a DM! Please check your privacy settings and try again.")
+            await ctx.reply("Unable to send a DM! Please check your privacy settings and try again.")
             return
         charFile.close()
         clearLog()
 
-    await ctx.send(":mailbox_with_mail: Please check your DMs!")
+    await ctx.reply(":mailbox_with_mail: Please check your DMs!")
 
     user = ctx.author
     registerLoop = True
@@ -535,7 +535,7 @@ async def reRegister(ctx, charID):
 @bot.command(pass_context=True, aliases=['reregister', 'submit', 'resubmit'])
 async def register(ctx, charID=''):
     if ctx.author.id in currentlyRegistering:
-        await ctx.send("You are already registering a character!")
+        await ctx.reply("You are already registering a character!")
         return
 
     currentlyRegistering.append(ctx.author.id)
@@ -546,7 +546,7 @@ async def register(ctx, charID=''):
             ctx.author.id)  # Fixed Bug with sending 'Please check your DMs!' as well as 'You do not own this character!' - Thanks @Venom134
         return
 
-    await ctx.send(":mailbox_with_mail: Please check your DMs!")
+    await ctx.reply(":mailbox_with_mail: Please check your DMs!")
     for word in currentlyRegistering:
         print(word)
 
@@ -558,7 +558,7 @@ async def register(ctx, charID=''):
                         "If you already have a character typed out, please type `prefilled` to submit a prefilled application. *(Not Recommended)* \n"
                         "If you do not wish to register, type `exit` to quit at any point.")
     except:
-        await ctx.send("Unable to send a DM! Please check your privacy settings and try again!")
+        await ctx.reply("Unable to send a DM! Please check your privacy settings and try again!")
         currentlyRegistering.remove(user.id)
         return
     await _registerChar(ctx, user)
@@ -630,19 +630,19 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
 
     charTXT = (f"Character Information for Character ID {charID}\n"
                f"Owner: {getMember(owner, ctx) or owner + ' (Owner has left server.)'}\n"
-               f"Status: {status}\n"
-               f"Name: {name}\n")
-    if age != '': charTXT = charTXT + f"Age: {age}\n"
-    if gender != '': charTXT = charTXT + f"Gender: {gender}\n"
-    if abil != '': charTXT = charTXT + f"Abilities/Tools: {abil}\n"
-    if appear != '': charTXT = charTXT + f"Appearance: {appear}\n"
-    if backg != '': charTXT = charTXT + f"Background: {backg}\n"
-    if person != '': charTXT = charTXT + f"Personality: {person}\n"
+               f"Status: {status}\n\n"
+               f"Name: {name}\n\n")
+    if age != '': charTXT = charTXT + f"Age: {age}\n\n"
+    if gender != '': charTXT = charTXT + f"Gender: {gender}\n\n"
+    if abil != '': charTXT = charTXT + f"Abilities/Tools: {abil}\n\n"
+    if appear != '': charTXT = charTXT + f"Appearance: {appear}\n\n"
+    if backg != '': charTXT = charTXT + f"Background: {backg}\n\n"
+    if person != '': charTXT = charTXT + f"Personality: {person}\n\n"
     if misc != '': charTXT = charTXT + misc
     if prefilled == '' or prefilled is None:
         pass
     else:
-        charTXT = charTXT + f"Prefilled: {prefilled}\n"
+        charTXT = charTXT + f"Prefilled: {prefilled}\n\n"
 
     charFile.write(charTXT)
 
@@ -676,7 +676,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
         charData = _getCharDict(sanID)
 
         if charData == 'INVALID CHARACTER':
-            await ctx.send("That is not a valid character!")
+            await ctx.reply("That is not a valid character!")
             return
 
         color = 0x000000
@@ -725,12 +725,12 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
 
         try:
             if dmchannel is False:
-                await ctx.send(embed=embedVar)
+                await ctx.reply(embed=embedVar)
             else:
                 await ctx.author.send(embed=embedVar)
         except:
             if dmchannel is False:
-                await ctx.send(f"This character was too long, so I have dumped it to a file.")
+                await ctx.reply(f"This character was too long, so I have dumped it to a file.")
             else:
                 ctx.author.send(f"This character was too too long, so I have dumped it to a file.")
             filePath = charToTxt(charID=charData["charID"], owner=charData["Owner"], status=charData["Status"],
@@ -742,7 +742,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
 
             charFile = open(filePath, 'r')
             if dmchannel is False:
-                await ctx.send(file=discord.File(filePath))
+                await ctx.reply(file=discord.File(filePath))
             else:
                 ctx.author.send(file=discord.File(filePath))
             charFile.close()
@@ -840,7 +840,7 @@ async def _set(ctx, charID, field, *, message: str):
         fSan = convertField(field.lower())
 
         if fSan == 'charID':
-            await ctx.send("You can not change the ID of a character!")
+            await ctx.reply("You can not change the ID of a character!")
             return
     else:
         await _custom(ctx, charID=charID, field=field, message=message)
@@ -849,38 +849,38 @@ async def _set(ctx, charID, field, *, message: str):
     if message == '' or message == 'delete':
         message = ''
         if fSan == 'name':
-            await ctx.send("You can not remove a characters' name!")
+            await ctx.reply("You can not remove a characters' name!")
             return
         elif fSan == 'misc':
             message = '{}'
 
     if fSan == 'owner' or fSan == 'status':
         if await checkGM(ctx) is False:
-            await ctx.send("You need to be a GM to change this!")
+            await ctx.reply("You need to be a GM to change this!")
             return
 
     if charID.isnumeric():
         icharID = int(charID)
     else:
-        await ctx.send("That is not a valid character ID!")
+        await ctx.reply("That is not a valid character ID!")
         return
 
     ownerID = _charExists(icharID)
 
     if ownerID == False:
-        await ctx.send("This character does not exist!")
+        await ctx.reply("This character does not exist!")
         return
 
     if not charPermissionCheck(ctx, ownerID):
-        await ctx.send("You do not have permission to modify this character!")
+        await ctx.reply("You do not have permission to modify this character!")
         return
 
     _setSQL(icharID, fSan, message)
 
     if message == '':
-        await ctx.send(f"Field {field.capitalize()} has been deleted.")
+        await ctx.reply(f"Field {field.capitalize()} has been deleted.")
     else:
-        await ctx.send(f"Field {field.capitalize()} has been changed.")
+        await ctx.reply(f"Field {field.capitalize()} has been changed.")
 
     await alertChannel.send(
         f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
@@ -900,17 +900,17 @@ async def _custom(ctx, charID='', field='', *, message: str):
     if charID.isnumeric():
         icharID = int(charID)
     else:
-        await ctx.send("That is not a valid character ID!")
+        await ctx.reply("That is not a valid character ID!")
         return
 
     charData = _getCharDict(icharID)
 
     if charData == 'INVALID CHARACTER':
-        await ctx.send("That is not a valid character!")
+        await ctx.reply("That is not a valid character!")
         return
 
     if ctx.author.id != int(charData["Owner"]):
-        await ctx.send("You do not own this character!")
+        await ctx.reply("You do not own this character!")
         return
 
     customFields = json.loads(charData["misc"])
@@ -918,7 +918,7 @@ async def _custom(ctx, charID='', field='', *, message: str):
     fieldDel = False
 
     if len(customFields) >= 12:
-        await ctx.send(
+        await ctx.reply(
             "You can not have more than 12 custom fields! Either modify an existing field, or remove an unneeded field.")
         return
 
@@ -927,7 +927,7 @@ async def _custom(ctx, charID='', field='', *, message: str):
             customFields.pop(field)
             fieldDel = True
         except:
-            await ctx.send("This field does not exist!")
+            await ctx.reply("This field does not exist!")
             return
     else:
         customFields[field] = message
@@ -935,19 +935,19 @@ async def _custom(ctx, charID='', field='', *, message: str):
     miscData = json.dumps(customFields)
     _setSQL(icharID, "misc", miscData)
     if fieldDel == False:
-        await ctx.send(f"Custom field {field} has been set.")
+        await ctx.reply(f"Custom field {field} has been set.")
         await alertChannel.send(
             f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
         return
 
-    await ctx.send(f"Custom field {field} has been deleted.")
+    await ctx.reply(f"Custom field {field} has been deleted.")
 
     await alertChannel.send(
         f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been deleted.")
 
 
 async def _custom_error(ctx, args):
-    await ctx.send("Unable to set a custom field to a blank value!")
+    await ctx.reply("Unable to set a custom field to a blank value!")
 
 
 @dataclass
@@ -979,10 +979,10 @@ async def getUserChars(ctx, userID, pageSize, pageID):
         charListStr = f"{charListStr}**`{i.id}.`** {i.name[0:75]} (Owner: {member or i.owner})\n"
 
     if len(charList) == 0:
-        await ctx.send("No characters matched the query!")
+        await ctx.reply("No characters matched the query!")
         return
 
-    await ctx.send(
+    await ctx.reply(
         f"List of characters belonging to {member or userID + ' (User has left server)'} (Page: {pageNo + 1} of {math.ceil(count / pageSize)})\n{charListStr}")
 
 
@@ -1035,7 +1035,7 @@ async def _list(ctx, pageIdentifier='', page=''):
         member = ctx.message.guild.get_member(int(i.owner))
         charListStr = f"{charListStr}**`{i.id}.`** {i.name[0:75]} (Owner: {member or i.owner})\n"
 
-    await ctx.send(f"List of all characters: (Page: {pageNo + 1} of {math.ceil(count / pageSize)})\n{charListStr}")
+    await ctx.reply(f"List of all characters: (Page: {pageNo + 1} of {math.ceil(count / pageSize)})\n{charListStr}")
 
 
 fields = ['owner', 'ownerid', 'status', 'name', 'charid', 'id', 'age', 'gender', 'abilities/tools', 'abilities',
@@ -1072,7 +1072,7 @@ async def _search(ctx, selector='', extra1='', extra2=''):
     rp!search <FIELD> <QUERY> - Searches a specific field for a search query.'''
 
     if selector == '':
-        await ctx.send("You have not entered anything to search!")
+        await ctx.reply("You have not entered anything to search!")
         return
 
     if (ctx.message.mentions):
@@ -1124,7 +1124,7 @@ async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
         member = ctx.message.guild.get_member(int(i.owner))
         charListStr = f"{charListStr}**`{i.id}.`** {i.name[0:30]} (Owner: {member or i.owner})\n"
 
-    await ctx.send(
+    await ctx.reply(
         f"List of characters meeting search criteria (Page {pageNo + 1} of {math.ceil(count / 25)}):\n{charListStr}")
 
 
@@ -1140,19 +1140,19 @@ async def _delete(ctx, charDel='', confirmation=''):
             await _deleteChar(ctx, int(charDel))
             return
         else:
-            await ctx.send("Are you sure you wish to delete this character? Please type `confirm` if you are sure.")
+            await ctx.reply("Are you sure you wish to delete this character? Please type `confirm` if you are sure.")
             response = await bot.wait_for("message", check=message_check())
             if response.content.lower() == 'confirm':
                 await _deleteChar(ctx, int(charDel))
                 return
     else:
-        await ctx.send("Invalid Character ID!")
+        await ctx.reply("Invalid Character ID!")
 
 
 @bot.command(name='undelete', aliases=['recover'])
 async def _undelete(ctx, charID):
     if not await checkGM(ctx):
-        await ctx.send("You do not have permission to do this!")
+        await ctx.reply("You do not have permission to do this!")
         return
 
     if charID.isnumeric():
@@ -1162,7 +1162,7 @@ async def _undelete(ctx, charID):
 
     cursor.execute("UPDATE charlist SET status = 'Pending' WHERE charID is ?", [icharID])
     conn.commit()
-    await ctx.send(f"Character {icharID} has been recovered.")
+    await ctx.reply(f"Character {icharID} has been recovered.")
 
 
 def charPermissionCheck(ctx, ownerID):
@@ -1193,7 +1193,7 @@ async def _deleteChar(ctx, charID):
     ownerP = _charExists(charID)
 
     if ownerP is False:
-        await ctx.send("That character does not exist!")
+        await ctx.reply("That character does not exist!")
         return
 
     cursor = conn.cursor()
@@ -1201,9 +1201,9 @@ async def _deleteChar(ctx, charID):
     if charPermissionCheck(ctx, ownerID=ownerP) is True:
         cursor.execute(f"UPDATE charlist SET status = 'Disabled' WHERE charID is ?", [charID])
         conn.commit()
-        await ctx.send(f"Character {charID} has been deleted.")
+        await ctx.reply(f"Character {charID} has been deleted.")
     else:
-        await ctx.send("You do not own this character!")
+        await ctx.reply("You do not own this character!")
 
 
 async def getdm(ctx):
@@ -1245,10 +1245,10 @@ def previewChar(cfields=None, prefilled=None, name=None):
 
 @bot.command()
 async def invite(ctx):
-    await ctx.send("This bot is a private bot and is not currently available to invite.\n"
-                   "If you wish to run it yourself, you can download the source code here:\n"
-                   "https://github.com/OblivionCreator/mettaton-2.py\n"
-                   "`THIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.`")
+    await ctx.reply("This bot is a private bot and is not currently available to invite.\n"
+                    "If you wish to run it yourself, you can download the source code here:\n"
+                    "https://github.com/OblivionCreator/mettaton-2.py\n"
+                    "`THIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.`")
 
 
 canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
@@ -1570,12 +1570,12 @@ async def eval_fn(ctx, *, cmd):
     exec(compile(parsed, filename="<ast>", mode="exec"), env)
 
     result = (await eval(f"{fn_name}()", env))
-    await ctx.send(result)
+    await ctx.reply(result)
 
 
 @bot.command()
 async def help(ctx):
-    await ctx.send(
+    await ctx.reply(
         "For help, please check out the Wiki on Github!\nhttps://github.com/OblivionCreator/mettaton-2.py/wiki")
 
 
@@ -1584,6 +1584,13 @@ async def help(ctx):
 async def logHandler(message):
     channel = bot.get_channel(LogChannel())
     await channel.send(message)
+
+
+## Other ##
+
+@bot.command()
+async def replytest(ctx):
+    await ctx.reply("TEST REPLY")
 
 
 ## Auto Backup ##
@@ -1649,15 +1656,15 @@ async def runBackup():
 @commands.cooldown(1, 3600, commands.BucketType.guild)
 async def sans(ctx):
     if random.randint(0, 100) <= 10:
-        await ctx.send(open('resources/ascii_papyrus.txt', encoding="utf-8").read())
+        await ctx.reply(open('resources/ascii_papyrus.txt', encoding="utf-8").read())
     else:
-        await ctx.send(open('resources/ascii_sans.txt', encoding="utf-8").read())
+        await ctx.reply(open('resources/ascii_sans.txt', encoding="utf-8").read())
 
 
 @bot.command()
 @commands.cooldown(1, 60, commands.BucketType.guild)
 async def papyrus(ctx):
-    await ctx.send(f"Nice Try, <@{str(ctx.author.id)}>")
+    await ctx.reply(f"Nice Try, <@{str(ctx.author.id)}>")
 
 
 @tasks.loop(minutes=5)
