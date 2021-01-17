@@ -48,7 +48,7 @@ drive = GoogleDrive(gauth)
 async def configLoader():
     try:
         with open('.config') as file:
-            print("Config Loaded!")
+            print("Loading Config...")
 
             conf = getConfig()
 
@@ -83,8 +83,7 @@ async def configLoader():
 
 
 bot = commands.Bot(
-    command_prefix=['rp!', 'sans!', 'mtt!', 'arik ', 'bliv pls ', 'bliv ', 'https://en.wikipedia.org/wiki/Insanity ',
-                    'Rp!'],
+    command_prefix=['rp!', 'sans!', 'mtt!', 'Rp!', 'RP!', 'rP!'],
     intents=intents, case_insensitive=True)
 bot.remove_command("help")
 currentlyRegistering = []
@@ -214,7 +213,6 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
         cur = conn.cursor()
         cur.execute(sql, charFinal)
         conn.commit()
-        print(cur.lastrowid)
         return cur.lastrowid
     else:
 
@@ -223,7 +221,6 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
         cur = conn.cursor()
         cur.execute(sql, charwid)
         conn.commit()
-        print(cur.lastrowid)
         return cur.lastrowid
 
 
@@ -353,8 +350,6 @@ async def alertUser(ctx, charID, status, reason):
     ownerID = charData["Owner"]
     name = charData["Name"]
 
-    print('debug')
-
     user = ctx.guild.get_member(int(ownerID))
 
     if user == None:
@@ -412,7 +407,7 @@ async def reRegister(ctx, charID):
         ownerP = owner[0]
 
     if int(ownerP) != ctx.author.id:
-        print(ownerP)
+        await logMSG(f"<@{ctx.author.id} tried editing a character belonging to <@{ownerP}>!")
         await ctx.reply("You do not own this character!")
         return
 
@@ -547,10 +542,8 @@ async def register(ctx, charID=''):
         return
 
     await ctx.reply(":mailbox_with_mail: Please check your DMs!")
-    for word in currentlyRegistering:
-        print(word)
 
-    print("DEBUG: REGISTER COMMAND FROM USER ID: ", ctx.author.id, " - ", ctx.author)
+    await logMSG(f"Register command from {ctx.author}")
     user = ctx.author
     try:
         await user.send("**Let's submit your character.** \n \n"
@@ -714,7 +707,6 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 customFields = json.loads(charData["misc"])
                 miscData = ''
                 for name, value in customFields.items():
-                    print(name)
                     embedVar.add_field(name=name, value=value, inline=False)
                     miscData = f"{miscData}\n{name}: {value}"
             except:
@@ -767,7 +759,6 @@ def _getChar(charID=0):  # Deprecated as of Version 2.1 - Use _getCharDict inste
     print(checkStatus)
 
     if checkStatus == 'Disabled':
-        print("Invalid Character")
         return charInvalid
 
     return charInfo
@@ -796,7 +787,6 @@ def _getCharDict(charID=0):
     cur.execute(sql, [charID])
 
     chars = cur.fetchone()
-    print(chars)
 
     x = 0
 
@@ -914,7 +904,6 @@ async def _custom(ctx, charID='', field='', *, message: str):
         return
 
     customFields = json.loads(charData["misc"])
-    print(customFields)
     fieldDel = False
 
     if len(customFields) >= 12:
@@ -931,7 +920,6 @@ async def _custom(ctx, charID='', field='', *, message: str):
             return
     else:
         customFields[field] = message
-    print(customFields)
     miscData = json.dumps(customFields)
     _setSQL(icharID, "misc", miscData)
     if fieldDel == False:
@@ -961,12 +949,10 @@ class CharacterListItem:
 async def getUserChars(ctx, userID, pageSize, pageID):
     pageNo = int(pageID - 1)
 
-    print(pageNo)
     cursor = conn.cursor()
     userInt = int(userID)
     cursor.execute(f"SELECT count(*) FROM charlist WHERE status IS NOT 'Disabled' AND owner IS {userID}")
     count = cursor.fetchone()[0]
-    print(count)
 
     cursor.execute(
         f"SELECT charID, name, owner FROM charlist WHERE status IS NOT 'Disabled' AND owner IS {userInt} ORDER BY charID LIMIT {pageSize} OFFSET {pageNo * pageSize}")
@@ -1027,7 +1013,6 @@ async def _list(ctx, pageIdentifier='', page=''):
         f"SELECT charID, name, owner FROM charlist WHERE status IS NOT 'Disabled' Order By charID limit {pageSize} OFFSET {pageNo * pageSize}")
 
     charList = [CharacterListItem(charID, name, owner) for charID, name, owner in cursor]
-    print(charList)
 
     charListStr = ''
 
@@ -1112,10 +1097,8 @@ async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
     cur.execute(sql, ['%' + search + '%', (25 * pageNo)])
 
     charList = [CharacterListItem(id=charID, name=name, owner=owner) for charID, owner, name in cur]
-    print(charList)
 
     if rawR is True:
-        print("Returning")
         return charList
 
     charListStr = ''
@@ -1210,11 +1193,9 @@ async def getdm(ctx):
     response = await bot.wait_for('message', check=message_check(channel=ctx.author.dm_channel))
     attach = None
     if response.attachments:
-        print(str(ctx.author) + " submitted an attachment!")
         attach = str(response.attachments[0].url)
         finalResponse = attach + ' ' + response.content
     else:
-        print(str(ctx.author) + " submitted no attachments.")
         finalResponse = response.content
     return finalResponse
 
@@ -1394,21 +1375,16 @@ async def _registerChar(ctx, user):
                     for x in cfields:
                         if cfields[x] is None:
                             emptyFields.append(x)
-                            print(x + " is empty!")
                         else:
                             completeFields.append(x)
-                            print(x + " is complete!")
-                    print("Checks Complete")
 
                     toSpecify = ''
                     specifyDone = ''
 
                     for word in emptyFields:
-                        print(word)
                         toSpecify = (toSpecify + "`" + word.capitalize() + "`, ")
 
                     for word2 in completeFields:
-                        print(word2)
                         specifyDone = (specifyDone + "`" + word2.capitalize() + "`, ")
 
                     if not toSpecify:
@@ -1586,6 +1562,17 @@ async def logHandler(message):
     await channel.send(message)
 
 
+async def getLogChannel():
+    return bot.get_channel(LogChannel())
+
+
+async def logMSG(message):
+    try:
+        await getLogChannel().send(message)
+    except Exception as e:
+        print(f"Failed to send Log! Message to log:\n{message}\nFull Exception as Follows:\n{e}")
+
+
 ## Other ##
 
 @bot.command()
@@ -1623,7 +1610,7 @@ async def runBackup():
     status = discord.Status.idle
     await bot.change_presence(activity=discord.Game("Auto-Backup in Progress!"), status=status)
 
-    print("Closing Database Connection...")
+    await logMSG("Closing Database Connection...")
     close_connection(database)
 
     folderName = 'Mettaton Backups'
@@ -1641,7 +1628,7 @@ async def runBackup():
             dBackup.Upload()
 
     conn = create_connection(database)
-    print("Reopening Database Connection...")
+    await logMSG("Reopening Database Connection...")
 
     timerEnd = time.perf_counter()
     await channel.send(f"Backup Complete in {str((timerEnd - timerStart))[0:5]} seconds.")
