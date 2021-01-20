@@ -55,31 +55,45 @@ async def configLoader():
             gmchannel = bot.get_channel(GMChannel())
             logchannel = bot.get_channel(LogChannel())
 
-            validGMChannel = False
+            validGMChannel = True
 
             try:
                 await gmchannel.send("Bot has loaded successfully.")
             except:
-                validGMChannel = True
+                print(
+                    "There is no valid GM Channel set! Please use rp!setgmchannel to set one, or the bot will not function correctly.")
+                validGMChannel = False
 
             try:
                 await logchannel.send("Logging has loaded successfully.")
             except:
                 if validGMChannel:
-                    await bot.get_channel(GMChannel())
+                    gmc = await bot.get_channel(GMChannel())
+                    await gmc.send(
+                        "There is no valid logging channel! Please use rp!setlogchannel to set one, or the bot may not function correctly!")
+                else:
+                    print(
+                        "There is no valid logging channel! Please use rp!setlogchannel to set one, or the bot may not function correctly!")
 
 
     except (FileNotFoundError, IOError):
+
+        print("Config Files not found!\nCreating Config.")
+
         file = open('.config', 'x')
 
         configDict = {
             'gmchannel': 0,
-            'logchannel': 0
+            'logchannel': 0,
+            'autobackup': 0,
         }
 
         cfgJson = json.dumps(configDict)
 
         file.write(cfgJson)
+
+        print(
+            "Config File has been created.\nTo set the GM Channel, type rp!setgmchannel in the specified channel.\nTo set the logging channel, type rp!setlogchannel in the specified channel.")
 
 
 bot = commands.Bot(
@@ -280,7 +294,6 @@ async def _setGMCChannel(ctx):
     updateConfig('gmchannel', ctx.channel.id)
 
     await ctx.reply("Successfully set GM Channel!")
-
 
 @bot.command(name='setLogChannel')
 async def _setLogChannel(ctx):
@@ -1606,7 +1619,10 @@ async def runBackup():
     channel = bot.get_channel(int(GMChannel()))
     date = datetime.now()
     timerStart = time.perf_counter()
-    await channel.send("Starting Backup! The bot may not respond to commands.")
+    try:
+        await channel.send("Starting Backup! The bot may not respond to commands.")
+    except Exception as e:
+        await logMSG(f"Unable to send Backup Alert. Please ensure the GM channel is set correctly!.\n{e}")
     status = discord.Status.idle
     await bot.change_presence(activity=discord.Game("Auto-Backup in Progress!"), status=status)
 
@@ -1631,7 +1647,10 @@ async def runBackup():
     await logMSG("Reopening Database Connection...")
 
     timerEnd = time.perf_counter()
-    await channel.send(f"Backup Complete in {str((timerEnd - timerStart))[0:5]} seconds.")
+    try:
+        await channel.send(f"Backup Complete in {str((timerEnd - timerStart))[0:5]} seconds.")
+    except Exception as e:
+        await logMSG(f"Unable to send Backup Complete Alert. Please ensure the GM channel is set correctly!.\n{e}")
 
     backupOngoing = False
     await statusChanger()
@@ -1674,6 +1693,8 @@ async def statusChanger():
                     'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm',
                     'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters',
                     'Dead Parents', 'with the edge.']
+
+    statusjs = json.dumps(statusChoice)
 
     await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
 
