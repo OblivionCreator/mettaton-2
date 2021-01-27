@@ -22,6 +22,8 @@ from discord import HTTPException
 from discord.utils import get
 import webhook_manager
 
+# TRANSLATION BRANCH
+
 intents = discord.Intents.default()
 intents.members = True
 
