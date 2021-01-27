@@ -20,6 +20,7 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from discord import HTTPException
 from discord.utils import get
+import webhook_manager
 
 intents = discord.Intents.default()
 intents.members = True
@@ -58,7 +59,7 @@ async def configLoader():
             validGMChannel = True
 
             try:
-                await gmchannel.send("Bot has loaded successfully.")
+                await logchannel.send("Bot has loaded successfully.")
             except:
                 print(
                     "There is no valid GM Channel set! Please use rp!setgmchannel to set one, or the bot will not function correctly.")
@@ -118,6 +119,11 @@ def GMChannel():
 def LogChannel():
     conf = getConfig()
     return int(conf["logchannel"])
+
+
+def doBackup():
+    conf = getConfig()
+    return int(conf["autobackup"])
 
 
 @bot.event
@@ -1247,7 +1253,8 @@ async def invite(ctx):
 
 canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
              "chara", "muffet", "pepsi man", "toriel", "kris", "ralsei", "shrek", "betty",
-             "fallenfire", "gaster", "jade", "coldsteel the hedgehog"]  # To do - Make this into a function.
+             "fallenfire", "gaster", "jade",
+             "coldsteel the hedgehog"]  # List of characters the bot will auto deny for. BE SPECIFIC!
 
 
 async def canonCheck(response, user):
@@ -1697,6 +1704,49 @@ async def statusChanger():
     statusjs = json.dumps(statusChoice)
 
     await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
+
+
+## Other ##
+
+@bot.command()
+async def send(ctx, id, *, message: str):
+    charData = _getCharDict(id)
+    if charData == 'INVALID CHARACTER':
+        try:
+            await ctx.author.send("Unable to send message! That character does not exist.")
+        except Exception as e:
+            await logMSG(f"Failed sending message to {ctx.author} ({ctx.author.id}).\n{e}")
+        await ctx.message.delete()
+        return
+
+    if ctx.author.id != int(charData["Owner"]):
+        try:
+            await ctx.author.send("You do not own this character!")
+            await logMSG(f"{ctx.author} ({ctx.author.id}) tried sending as a character they don't own.")
+        except Exception as e:
+            await logMSG(f"Failed sending message to {ctx.author} ({ctx.author.id}).\n{e}")
+        await ctx.message.delete()
+        return
+
+    if charData["Status"] != 'Approved':
+        try:
+            await ctx.author.send("This character is not approved!")
+            await logMSG(f"{ctx.author} ({ctx.author.id}) tried sending as a character that is not approved.")
+        except Exception as e:
+            await logMSG(f"Failed sending message to {ctx.author} ({ctx.author.id}).\n{e}")
+        await ctx.message.delete()
+        return
+
+    name = charData["Name"]
+    name = name[0:80]
+
+    custom_img = None
+
+    portJS = json.loads(charData["misc"])
+    if "Portrait" in portJS:
+        custom_img = portJS["Portrait"]
+
+    await webhook_manager.send(ctx, name, message, custom_img)
 
 
 bot.run(token)
