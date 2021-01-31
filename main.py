@@ -1688,6 +1688,14 @@ async def changeStatus():
 async def statusChanger():
     status = discord.Status.online
 
+    from datetime import date
+
+    dt = date.today()
+    d1 = dt.strftime("%d")
+    if int(d1) == 31:
+        await bot.change_presence(activity=discord.Game("SHE LIVED, BITCH"))
+        return
+
     statusChoice = ['Aik has Played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role',
                     'old enough for soriel',
                     'haha he smope weef', 'SHUP', 'AMA', '...meme?', 'role!unban', '1000 blood', 'blame AIK',
