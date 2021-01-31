@@ -21,6 +21,7 @@ from pydrive.drive import GoogleDrive
 from discord import HTTPException
 from discord.utils import get
 import webhook_manager
+from configparser import ConfigParser
 
 # TRANSLATION BRANCH
 
@@ -89,6 +90,7 @@ async def configLoader():
             'gmchannel': 0,
             'logchannel': 0,
             'autobackup': 0,
+            'language': 'translation/lang_en.ini'
         }
 
         cfgJson = json.dumps(configDict)
@@ -121,6 +123,19 @@ def GMChannel():
 def LogChannel():
     conf = getConfig()
     return int(conf["logchannel"])
+
+
+def getLang(section, line):
+    conf = getConfig()
+    dir = conf["language"]
+
+    lang = ConfigParser()
+
+    lang.read(dir)
+
+    lineStr = lang.get(section, line)
+
+    return lineStr
 
 
 def doBackup():
@@ -296,21 +311,21 @@ async def _setGMCChannel(ctx):
     role_names = [role.name for role in ctx.author.roles]
 
     if "Gamemaster" not in role_names:
-        await ctx.reply("You do not have permission to change the GM Channel!")
+        await ctx.reply(getLang("GMChannel", "gmc_1"))
         return
 
     updateConfig('gmchannel', ctx.channel.id)
 
-    await ctx.reply("Successfully set GM Channel!")
+    await ctx.reply(getLang("GMChannel", "gmc_2"))
 
 @bot.command(name='setLogChannel')
 async def _setLogChannel(ctx):
     if not await checkGM(ctx):
-        await ctx.reply("You do not have permission to change the Log Channel!")
+        await ctx.reply(getLang("LogChannel", "lc_1"))
         return
 
     updateConfig('logchannel', ctx.channel.id)
-    await ctx.reply("Successfully set logging channel!")
+    await ctx.reply(ctx.reply(getLang("LogChannel", "lc_2")))
 
 
 def updateConfig(field, value):
@@ -1690,6 +1705,14 @@ async def changeStatus():
 async def statusChanger():
     status = discord.Status.online
 
+    from datetime import date
+
+    dt = date.today()
+    d1 = dt.strftime("%d")
+    if int(d1) == 31:
+        await bot.change_presence(activity=discord.Game("SHE LIVED, BITCH"))
+        return
+
     statusChoice = ['Aik has Played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role',
                     'old enough for soriel',
                     'haha he smope weef', 'SHUP', 'AMA', '...meme?', 'role!unban', '1000 blood', 'blame AIK',
@@ -1701,7 +1724,7 @@ async def statusChanger():
                     'This server has been murder free for 0 Months', 'Pending', 'Vampire Celery', 'Bugsonas Are Real',
                     'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm',
                     'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters',
-                    'Dead Parents', 'with the edge.']
+                    'Dead Parents', 'with the edge.', 'SHE LIVED, BITCH']
 
     statusjs = json.dumps(statusChoice)
 
