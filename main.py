@@ -327,8 +327,15 @@ statuses = {
     "pending": "Pending",
     "kill": "Dead",
     "approve": "Approved",
-    "deny": "Denied"
+    "deny": "Denied",
+    "bp": "Denied"
 }
+
+
+@bot.command()
+async def bp(ctx, charID):
+    await approve(ctx, charID,
+                  reason="This character does not meet our minimum quality requirements, and requires expansion in every field in its current state. Please read the #rules, #lore and #policy. I would recommend looking through already approved characters to get an idea of the quality we expect. (rp!search status approved in #bots)")
 
 
 @bot.command(aliases=['pending', 'deny', 'kill'])
@@ -492,10 +499,10 @@ async def reRegister(ctx, charID):
         presfields = ''
 
         if not blankFields == '':
-            presfields = f"\nYou can also add one of the following fields that are not currently present within your application:\n {blankFields}"
+            presfields = f"\nYou can also add one of the following fields that are not currently present within your application:\n {blankFields}\nTo cancel, type 'exit'."
 
         await user.send(
-            f"What field would you like to modify? Current Fields:\n{fullFields}" + presfields + "\nTo preview your character, type `preview`. If you are done, type `done` to resubmit your character.")
+            f"What field would you like to modify? Current Fields:\n{fullFields}" + presfields + "\nTo preview your character, type `preview`. If you are done, type `done` to resubmit your character.\nIf you wish to cancel, type 'exit'")
 
         field = await getdm(ctx)
         selector = field.lower()
@@ -1313,7 +1320,7 @@ async def _registerChar(ctx, user):
             await user.send("Now that your character has a name, let's start filling out some details.\n"
                             "What field would you like to edit?\n"
                             "Remaining fields to specify: `Age`, `Gender`, `Abilities/Tools`, `Appearance`, `Background`, `Personality`\n"
-                            "Fields already specified: `Name`")
+                            "Fields already specified: `Name`\nYou can type 'exit' to quit at any time.")
 
             while not charcomplete:
 
