@@ -301,6 +301,7 @@ async def _setGMCChannel(ctx):
 
     await ctx.reply("Successfully set GM Channel!")
 
+
 @bot.command(name='setLogChannel')
 async def _setLogChannel(ctx):
     if not await checkGM(ctx):
@@ -322,37 +323,22 @@ def updateConfig(field, value):
         json.dump(jsonOBJ, file)
 
 
-@bot.command()
-async def approve(ctx, charID, *, reason: str):
-    '''GM ONLY - Approves a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Approved', reason=reason)
+statuses = {
+    "pending": "Pending",
+    "kill": "Dead",
+    "approve": "Approved",
+    "deny": "Denied"
+}
 
 
-@bot.command()
-async def pending(ctx, charID, *, reason: str):
-    '''GM ONLY - Sets a specified character to Pending.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=reason)
-
-
-@bot.command()
-async def deny(ctx, charID, *, reason: str):
-    '''GM ONLY - Denies a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=reason)
-
-
-@bot.command()
-async def kill(ctx, charID, *, reason: str):
-    '''GM ONLY - Kills a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=reason)
-
-
-@approve.error
-@pending.error
-@deny.error
-@kill.error
-async def _approveE(ctx, charID):
-    await ctx.reply("You need to give a reason to change the status of a character!")
-
+@bot.command(aliases=['pending', 'deny', 'kill'])
+async def approve(ctx, charID, *, reason: str = ''):
+    if reason == '' and not ctx.message.attachments:
+        reason = 'No Reason Given'
+    if len(reason) > 1750:
+        await ctx.reply("The reason is too long! Try cutting it down or putting it in a text file!")
+        return
+    await _changeStatus(ctx, charID=charID, charStatus=statuses[ctx.invoked_with], reason=reason)
 
 async def checkGM(ctx):
     role_names = [role.name for role in ctx.author.roles]
@@ -378,7 +364,7 @@ async def alertUser(ctx, charID, status, reason):
 
     try:
         await user.send(
-            f"The status of character ID **{charID}** (Name: **{name[0:100]}**) has been set to `{status}` by {ctx.author.mention} for:\n{reason}")
+            f"The status of character ID **{charID}** (Name: **{name[0:100]}**) has been set to `{status}` by {ctx.author.mention} for reason:\n{reason}")
     except:
         ctx.reply(f"I was unable to send a message to the owner of Character {charID}. They may have their DMs closed!")
 
@@ -394,8 +380,8 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
         await ctx.reply("That is not a valid character ID!")
         return
 
-    logChannel = bot.get_channel(LogChannel())
-    await logChannel.send(f"{ctx.author} set character ID {charInt} to status {charStatus}")
+    if ctx.message.attachments:
+        reason = f"{reason}\n({str(ctx.message.attachments[0].url)})"
 
     cursor = conn.cursor()
     sql = '''UPDATE charlist SET status = ? WHERE charID is ?'''
@@ -411,6 +397,8 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
 
     await alertUser(ctx, charInt, charStatus, reason)
     await ctx.reply(f"Character `ID: {charID}` has been set to `{charStatus}`")
+    logChannel = bot.get_channel(LogChannel())
+    await logChannel.send(f"{ctx.author} set character ID {charInt} to status {charStatus} with reason:\n{reason}")
 
 
 async def reRegister(ctx, charID):
@@ -1253,7 +1241,7 @@ async def invite(ctx):
 
 canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
              "chara", "muffet", "pepsi man", "toriel", "kris", "ralsei", "shrek", "betty",
-             "fallenfire", "gaster", "jade",
+             "fallenfire", "gaster",
              "coldsteel the hedgehog"]  # List of characters the bot will auto deny for. BE SPECIFIC!
 
 
