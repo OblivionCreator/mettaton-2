@@ -45,6 +45,15 @@ gauth.SaveCredentialsFile("credentials.txt")
 
 drive = GoogleDrive(gauth)
 
+def configFields():
+    curConfig = {
+        'gmchannel': 0,
+        'logchannel': 0,
+        'autobackup': 0,
+        'language': 'translation/lang_en.ini',
+        'denylist': '[]'
+    }
+    return curConfig
 
 async def configLoader():
     try:
@@ -83,11 +92,7 @@ async def configLoader():
 
         file = open('.config', 'x')
 
-        configDict = {
-            'gmchannel': 0,
-            'logchannel': 0,
-            'autobackup': 0,
-        }
+        configDict = configFields()
 
         cfgJson = json.dumps(configDict)
 
@@ -124,6 +129,114 @@ def LogChannel():
 def doBackup():
     conf = getConfig()
     return int(conf["autobackup"])
+
+
+@commands.is_owner()
+@bot.command()
+async def rebuildConfig(ctx):
+    config = configFields()
+
+    file = open('.config', 'w')
+
+    configDict = configFields()
+
+    cfgJson = json.dumps(configDict)
+
+    file.write(cfgJson)
+
+    await ctx.reply("Config has been cleared!")
+
+    return
+
+
+# Deny List Handling
+
+def getDenyList():
+    conf = getConfig()
+    return conf["denylist"]
+
+
+# Returns current Deny List
+
+@bot.command()
+async def update_deny(ctx, act, term=''):
+    term = term.lower()
+
+    if not await checkGM(ctx):
+        await ctx.reply("You do not have permission to modify the deny list!")
+        return
+
+    if act.lower() == 'list':
+        await ctx.reply(f"Current terms in the deny list:\n{listDeny()}")
+        return
+
+    if term == '':
+        await ctx.reply("You need to state what you want to add or remove!")
+
+    if act == 'add':
+        addSt = addDeny(term)
+        if addSt == False:
+            await ctx.reply("That name is already in the deny list!")
+            return
+        await ctx.reply(f"'{term}' has been added to the deny list.")
+        return
+
+    if act.lower() == 'remove':
+        if delDeny(term) == False:
+            await ctx.reply("That name is not in the deny list!")
+            return
+        await ctx.reply(f"'{term}' has been removed from the deny list.")
+        return
+
+    await ctx.reply("That is not a valid action!\nValid Terms: `add`, `remove`, `list`")
+
+
+def listDeny():
+    denyList = getDenyList()
+
+    if len(denyList) == 0:
+        return "None!"
+
+    denySTR = ''
+
+    for d in denyList:
+        denySTR = f"{d}, {denySTR}"
+
+    return denySTR
+
+
+def addDeny(term):
+    conf = getConfig()
+    denyList = getDenyList()
+
+    if term in denyList:
+        return False
+
+    denyList.append(term)
+    conf["denylist"] = denyList
+
+    with open('.config', 'w') as f:
+        json.dump(conf, f)
+        f.close()
+
+    return True
+
+
+def delDeny(term):
+    conf = getConfig()
+    denyList = getDenyList()
+
+    if term not in denyList:
+        return False
+
+    denyList.remove(term)
+    conf["denylist"] = denyList
+
+    with open('.config', 'w') as f:
+        json.dump(conf, f)
+        f.close()
+
+    return True
 
 
 @bot.event
@@ -1247,16 +1360,15 @@ async def invite(ctx):
 
 
 canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
-             "chara", "muffet", "pepsi man", "toriel", "kris", "ralsei", "shrek", "betty",
-             "fallenfire", "gaster",
-             "coldsteel the hedgehog"]  # List of characters the bot will auto deny for. BE SPECIFIC!
+             "chara", "muffet", "toriel", "kris", "ralsei", "betty",
+             "fallenfire", "gaster"]  # List of characters the bot will auto deny for. BE SPECIFIC!
 
 
 async def canonCheck(response, user):
     global canonDeny
     response = response.lower()
 
-    if any(canon_char in response for canon_char in canonDeny):  # Thanks Atlas!
+    if any(canon_char in response for canon_char in getDenyList()):  # Thanks Atlas!
         await user.send(
             "**Canon Characters are not allowed. Please read the <#697160109700284456> and <#697153009599119493>**\n"
             "Exiting Character Creation.")
@@ -1583,7 +1695,7 @@ async def getLogChannel():
 
 async def logMSG(message):
     try:
-        await getLogChannel().send(message)
+        await (await getLogChannel()).send(message)
     except Exception as e:
         print(f"Failed to send Log! Message to log:\n{message}\nFull Exception as Follows:\n{e}")
 
