@@ -48,6 +48,34 @@ gauth.SaveCredentialsFile("credentials.txt")
 
 drive = GoogleDrive(gauth)
 
+
+def getConfig():
+    try:
+        with open('.config', 'r') as file:
+            jsonOBJ = json.load(file)
+            file.close()
+    except FileNotFoundError:
+        return False
+    return jsonOBJ
+
+
+def getLang(section, line):
+    conf = getConfig()
+
+    if conf == False:
+        dir = "translation/lang_en.ini"
+    else:
+        dir = conf["language"]
+
+    lang = ConfigParser()
+
+    lang.read(dir)
+
+    lineStr = lang.get(section, line)
+
+    return lineStr
+
+
 def configFields():
     curConfig = {
         'gmchannel': 0,
@@ -71,55 +99,43 @@ async def configLoader():
             validGMChannel = True
 
             try:
-                await logchannel.send("Bot has loaded successfully.")
+                await logchannel.send(getLang("Log", "lg_1"))
             except:
-                print(
-                    "There is no valid GM Channel set! Please use rp!setgmchannel to set one, or the bot will not function correctly.")
+                print(getLang("Log", "lg_2"))
                 validGMChannel = False
 
             try:
-                await logchannel.send("Logging has loaded successfully.")
+                await logchannel.send(getLang("Log", "lg_3"))
             except:
                 if validGMChannel:
                     gmc = await bot.get_channel(GMChannel())
-                    await gmc.send(
-                        "There is no valid logging channel! Please use rp!setlogchannel to set one, or the bot may not function correctly!")
+                    await gmc.send(getLang("Log", "lg_4"))
                 else:
-                    print(
-                        "There is no valid logging channel! Please use rp!setlogchannel to set one, or the bot may not function correctly!")
+                    print(getLang("Log", "lg_4"))
 
 
     except (FileNotFoundError, IOError):
 
-        print("Config Files not found!\nCreating Config.")
+        print(getLang("Log", "lg_5"))
 
         file = open('.config', 'x')
-        
-        configDict = 
-        
-        
-        ()
+
+        configDict = configFields()
 
         cfgJson = json.dumps(configDict)
 
         file.write(cfgJson)
 
-        print(
-            "Config File has been created.\nTo set the GM Channel, type rp!setgmchannel in the specified channel.\nTo set the logging channel, type rp!setlogchannel in the specified channel.")
+        print(getLang("Log", "lg_6"))
 
+
+cst_prefix = getLang("Commands", "prefix")
 
 bot = commands.Bot(
-    command_prefix=['rp!', 'sans!', 'mtt!', 'Rp!', 'RP!', 'rP!'],
+    command_prefix=['mtt!', 'Rp!', 'RP!', 'rP!', cst_prefix],
     intents=intents, case_insensitive=True)
 bot.remove_command("help")
 currentlyRegistering = []
-
-
-def getConfig():
-    with open('.config', 'r') as file:
-        jsonOBJ = json.load(file)
-        file.close()
-    return jsonOBJ
 
 
 def GMChannel():
@@ -132,18 +148,6 @@ def LogChannel():
     return int(conf["logchannel"])
 
 
-def getLang(section, line):
-    conf = getConfig()
-    dir = conf["language"]
-
-    lang = ConfigParser()
-
-    lang.read(dir)
-
-    lineStr = lang.get(section, line)
-
-    return lineStr
-
 
 def doBackup():
     conf = getConfig()
@@ -152,7 +156,7 @@ def doBackup():
 
 @commands.is_owner()
 @bot.command()
-async def rebuildConfig(ctx):
+async def clearconfig(ctx):
     config = configFields()
 
     file = open('.config', 'w')
@@ -163,17 +167,14 @@ async def rebuildConfig(ctx):
 
     file.write(cfgJson)
 
-    await ctx.reply("Config has been cleared!")
-
+    await ctx.reply(getLang("ClearConfig", "cc_1"))
     return
-
 
 # Deny List Handling
 
 def getDenyList():
     conf = getConfig()
     return conf["denylist"]
-
 
 # Returns current Deny List
 
@@ -182,39 +183,44 @@ async def update_deny(ctx, act, term=''):
     term = term.lower()
 
     if not await checkGM(ctx):
-        await ctx.reply("You do not have permission to modify the deny list!")
+        await ctx.reply(getLang("DenyList", "dl_1"))
         return
 
     if act.lower() == 'list':
-        await ctx.reply(f"Current terms in the deny list:\n{listDeny()}")
+        await ctx.reply(f"{getLang('DenyList', 'dl_2')}\n{listDeny()}")
         return
 
-    if term == '':
-        await ctx.reply("You need to state what you want to add or remove!")
-
     if act == 'add':
+
+        if term == '':
+            await ctx.reply(getLang("DenyList", "dl_3"))
+
         addSt = addDeny(term)
         if addSt == False:
-            await ctx.reply("That name is already in the deny list!")
+            await ctx.reply(getLang("DenyList", "dl_4"))
             return
-        await ctx.reply(f"'{term}' has been added to the deny list.")
+        await ctx.reply(getLang("DenyList", "dl_5").format(term))
         return
 
     if act.lower() == 'remove':
+
+        if term == '':
+            await ctx.reply(getLang("DenyList", "dl_3"))
+
         if delDeny(term) == False:
-            await ctx.reply("That name is not in the deny list!")
+            await ctx.reply(getLang("DenyList", "dl_6"))
             return
-        await ctx.reply(f"'{term}' has been removed from the deny list.")
+        await ctx.reply(getLang("DenyList", "dl_7").format(term))
         return
 
-    await ctx.reply("That is not a valid action!\nValid Terms: `add`, `remove`, `list`")
+    await ctx.reply(getLang("DenyList", "dl_8"))
 
 
 def listDeny():
     denyList = getDenyList()
 
     if len(denyList) == 0:
-        return "None!"
+        return getLang("DenyList", "dl_9")
 
     denySTR = ''
 
@@ -274,7 +280,7 @@ def create_connection(db_file):
         if file.is_file():
             conn = sqlite3.connect(db_file)
         else:
-            print("Database does not exist! Generating new Database")
+            print(getLang("Log", "lg_7"))
             conn = sqlite3.connect(db_file)
             cur = conn.cursor()
             sql = '''CREATE TABLE "charlist" (
@@ -297,10 +303,9 @@ def create_connection(db_file):
 
         print(sqlite3.version)
     except Error as e:
-        print(f"Connection Failed! - " + {str(e)})
+        print(getLang("Log", "lg_8") + {str(e)})
 
     return conn
-
 
 def clearLog():  # Deletes all files in charoverflow.
     files = glob.glob('charoverflow/*')
@@ -324,13 +329,13 @@ conn = create_connection(database)
 @bot.check
 async def globally_block_dms(ctx):
     if ctx.guild is None and ctx.author.id not in currentlyRegistering:
-        await ctx.author.send("You should do this in a server, you know.")
+        await ctx.author.send(getLang("Misc", "dm_response"))
     return ctx.guild is not None
 
 
 @bot.check
 async def globally_block_roles(ctx):
-    blacklist = ["NPC"]
+    blacklist = [getLang("Misc", "npc")]
     return not any(get(ctx.guild.roles, name=name) in ctx.author.roles for name in blacklist)
 
 
@@ -341,9 +346,10 @@ async def block_during_backup(ctx):
 
 @bot.check
 async def block_help(ctx):
+    if checkGM():
+        return True
     if ctx.channel.name == 'help':
-        await ctx.send(f"This is the help channel. Please go to #bots for any bot commands, <@{ctx.author.id}>")
-        await ctx.message.delete()
+        await ctx.reply(getLang("Misc", "helpBlock"))
         return False
     else:
         return True
@@ -396,7 +402,7 @@ def make_sequence(seq):
     if isinstance(seq, Sequence) and not isinstance(seq, str):
         return seq
     else:
-        return (seq,)
+        return seq,
 
 
 def message_check(channel=None, author=None, content=None, ignore_bot=True, lower=True):
@@ -441,7 +447,7 @@ async def _setLogChannel(ctx):
         return
 
     updateConfig('logchannel', ctx.channel.id)
-    await ctx.reply(ctx.reply(getLang("LogChannel", "lc_2")))
+    await ctx.reply(getLang("LogChannel", "lc_2"))
 
 
 def updateConfig(field, value):
