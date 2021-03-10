@@ -51,7 +51,7 @@ def configFields():
         'logchannel': 0,
         'autobackup': 0,
         'language': 'translation/lang_en.ini',
-        'denylist': '[]'
+        'denylist': []
     }
     return curConfig
 
