@@ -48,6 +48,15 @@ gauth.SaveCredentialsFile("credentials.txt")
 
 drive = GoogleDrive(gauth)
 
+def configFields():
+    curConfig = {
+        'gmchannel': 0,
+        'logchannel': 0,
+        'autobackup': 0,
+        'language': 'translation/lang_en.ini',
+        'denylist': []
+    }
+    return curConfig
 
 async def configLoader():
     try:
@@ -85,13 +94,11 @@ async def configLoader():
         print("Config Files not found!\nCreating Config.")
 
         file = open('.config', 'x')
-
-        configDict = {
-            'gmchannel': 0,
-            'logchannel': 0,
-            'autobackup': 0,
-            'language': 'translation/lang_en.ini'
-        }
+        
+        configDict = 
+        
+        
+        ()
 
         cfgJson = json.dumps(configDict)
 
@@ -141,6 +148,114 @@ def getLang(section, line):
 def doBackup():
     conf = getConfig()
     return int(conf["autobackup"])
+
+
+@commands.is_owner()
+@bot.command()
+async def rebuildConfig(ctx):
+    config = configFields()
+
+    file = open('.config', 'w')
+
+    configDict = configFields()
+
+    cfgJson = json.dumps(configDict)
+
+    file.write(cfgJson)
+
+    await ctx.reply("Config has been cleared!")
+
+    return
+
+
+# Deny List Handling
+
+def getDenyList():
+    conf = getConfig()
+    return conf["denylist"]
+
+
+# Returns current Deny List
+
+@bot.command()
+async def update_deny(ctx, act, term=''):
+    term = term.lower()
+
+    if not await checkGM(ctx):
+        await ctx.reply("You do not have permission to modify the deny list!")
+        return
+
+    if act.lower() == 'list':
+        await ctx.reply(f"Current terms in the deny list:\n{listDeny()}")
+        return
+
+    if term == '':
+        await ctx.reply("You need to state what you want to add or remove!")
+
+    if act == 'add':
+        addSt = addDeny(term)
+        if addSt == False:
+            await ctx.reply("That name is already in the deny list!")
+            return
+        await ctx.reply(f"'{term}' has been added to the deny list.")
+        return
+
+    if act.lower() == 'remove':
+        if delDeny(term) == False:
+            await ctx.reply("That name is not in the deny list!")
+            return
+        await ctx.reply(f"'{term}' has been removed from the deny list.")
+        return
+
+    await ctx.reply("That is not a valid action!\nValid Terms: `add`, `remove`, `list`")
+
+
+def listDeny():
+    denyList = getDenyList()
+
+    if len(denyList) == 0:
+        return "None!"
+
+    denySTR = ''
+
+    for d in denyList:
+        denySTR = f"{d}, {denySTR}"
+
+    return denySTR
+
+
+def addDeny(term):
+    conf = getConfig()
+    denyList = getDenyList()
+
+    if term in denyList:
+        return False
+
+    denyList.append(term)
+    conf["denylist"] = denyList
+
+    with open('.config', 'w') as f:
+        json.dump(conf, f)
+        f.close()
+
+    return True
+
+
+def delDeny(term):
+    conf = getConfig()
+    denyList = getDenyList()
+
+    if term not in denyList:
+        return False
+
+    denyList.remove(term)
+    conf["denylist"] = denyList
+
+    with open('.config', 'w') as f:
+        json.dump(conf, f)
+        f.close()
+
+    return True
 
 
 @bot.event
@@ -318,6 +433,7 @@ async def _setGMCChannel(ctx):
 
     await ctx.reply(getLang("GMChannel", "gmc_2"))
 
+
 @bot.command(name='setLogChannel')
 async def _setLogChannel(ctx):
     if not await checkGM(ctx):
@@ -339,37 +455,29 @@ def updateConfig(field, value):
         json.dump(jsonOBJ, file)
 
 
-@bot.command()
-async def approve(ctx, charID, *, reason: str):
-    '''GM ONLY - Approves a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Approved', reason=reason)
+statuses = {
+    "pending": "Pending",
+    "kill": "Dead",
+    "approve": "Approved",
+    "deny": "Denied",
+    "bp": "Denied"
+}
 
 
 @bot.command()
-async def pending(ctx, charID, *, reason: str):
-    '''GM ONLY - Sets a specified character to Pending.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Pending', reason=reason)
+async def bp(ctx, charID):
+    await approve(ctx, charID,
+                  reason="This character does not meet our minimum quality requirements, and requires expansion in every field in its current state. Please read the #rules, #lore and #policy. I would recommend looking through already approved characters to get an idea of the quality we expect. (rp!search status approved in #bots)")
 
 
-@bot.command()
-async def deny(ctx, charID, *, reason: str):
-    '''GM ONLY - Denies a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Denied', reason=reason)
-
-
-@bot.command()
-async def kill(ctx, charID, *, reason: str):
-    '''GM ONLY - Kills a specified character.'''
-    await _changeStatus(ctx, charID=charID, charStatus='Dead', reason=reason)
-
-
-@approve.error
-@pending.error
-@deny.error
-@kill.error
-async def _approveE(ctx, charID):
-    await ctx.reply("You need to give a reason to change the status of a character!")
-
+@bot.command(aliases=['pending', 'deny', 'kill'])
+async def approve(ctx, charID, *, reason: str = ''):
+    if reason == '' and not ctx.message.attachments:
+        reason = 'No Reason Given'
+    if len(reason) > 1750:
+        await ctx.reply("The reason is too long! Try cutting it down or putting it in a text file!")
+        return
+    await _changeStatus(ctx, charID=charID, charStatus=statuses[ctx.invoked_with], reason=reason)
 
 async def checkGM(ctx):
     role_names = [role.name for role in ctx.author.roles]
@@ -395,7 +503,7 @@ async def alertUser(ctx, charID, status, reason):
 
     try:
         await user.send(
-            f"The status of character ID **{charID}** (Name: **{name[0:100]}**) has been set to `{status}` by {ctx.author.mention} for:\n{reason}")
+            f"The status of character ID **{charID}** (Name: **{name[0:100]}**) has been set to `{status}` by {ctx.author.mention} for reason:\n{reason}")
     except:
         ctx.reply(f"I was unable to send a message to the owner of Character {charID}. They may have their DMs closed!")
 
@@ -411,8 +519,8 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
         await ctx.reply("That is not a valid character ID!")
         return
 
-    logChannel = bot.get_channel(LogChannel())
-    await logChannel.send(f"{ctx.author} set character ID {charInt} to status {charStatus}")
+    if ctx.message.attachments:
+        reason = f"{reason}\n({str(ctx.message.attachments[0].url)})"
 
     cursor = conn.cursor()
     sql = '''UPDATE charlist SET status = ? WHERE charID is ?'''
@@ -428,6 +536,8 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
 
     await alertUser(ctx, charInt, charStatus, reason)
     await ctx.reply(f"Character `ID: {charID}` has been set to `{charStatus}`")
+    logChannel = bot.get_channel(LogChannel())
+    await logChannel.send(f"{ctx.author} set character ID {charInt} to status {charStatus} with reason:\n{reason}")
 
 
 async def reRegister(ctx, charID):
@@ -521,10 +631,10 @@ async def reRegister(ctx, charID):
         presfields = ''
 
         if not blankFields == '':
-            presfields = f"\nYou can also add one of the following fields that are not currently present within your application:\n {blankFields}"
+            presfields = f"\nYou can also add one of the following fields that are not currently present within your application:\n {blankFields}\nTo cancel, type 'exit'."
 
         await user.send(
-            f"What field would you like to modify? Current Fields:\n{fullFields}" + presfields + "\nTo preview your character, type `preview`. If you are done, type `done` to resubmit your character.")
+            f"What field would you like to modify? Current Fields:\n{fullFields}" + presfields + "\nTo preview your character, type `preview`. If you are done, type `done` to resubmit your character.\nIf you wish to cancel, type 'exit'")
 
         field = await getdm(ctx)
         selector = field.lower()
@@ -1269,16 +1379,15 @@ async def invite(ctx):
 
 
 canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
-             "chara", "muffet", "pepsi man", "toriel", "kris", "ralsei", "shrek", "betty",
-             "fallenfire", "gaster", "jade",
-             "coldsteel the hedgehog"]  # List of characters the bot will auto deny for. BE SPECIFIC!
+             "chara", "muffet", "toriel", "kris", "ralsei", "betty",
+             "fallenfire", "gaster"]  # List of characters the bot will auto deny for. BE SPECIFIC!
 
 
 async def canonCheck(response, user):
     global canonDeny
     response = response.lower()
 
-    if any(canon_char in response for canon_char in canonDeny):  # Thanks Atlas!
+    if any(canon_char in response for canon_char in getDenyList()):  # Thanks Atlas!
         await user.send(
             "**Canon Characters are not allowed. Please read the <#697160109700284456> and <#697153009599119493>**\n"
             "Exiting Character Creation.")
@@ -1342,7 +1451,7 @@ async def _registerChar(ctx, user):
             await user.send("Now that your character has a name, let's start filling out some details.\n"
                             "What field would you like to edit?\n"
                             "Remaining fields to specify: `Age`, `Gender`, `Abilities/Tools`, `Appearance`, `Background`, `Personality`\n"
-                            "Fields already specified: `Name`")
+                            "Fields already specified: `Name`\nYou can type 'exit' to quit at any time.")
 
             while not charcomplete:
 
@@ -1605,7 +1714,7 @@ async def getLogChannel():
 
 async def logMSG(message):
     try:
-        await getLogChannel().send(message)
+        await (await getLogChannel()).send(message)
     except Exception as e:
         print(f"Failed to send Log! Message to log:\n{message}\nFull Exception as Follows:\n{e}")
 

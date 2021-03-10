@@ -1,6 +1,5 @@
 import aiohttp
 
-
 async def send(ctx, name, message, custom_img=None):
     if ctx.message.attachments:
         attachment = ctx.message.attachments[0]
