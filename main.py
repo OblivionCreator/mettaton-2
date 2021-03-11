@@ -346,7 +346,7 @@ async def block_during_backup(ctx):
 
 @bot.check
 async def block_help(ctx):
-    if checkGM():
+    if await checkGM(ctx):
         return True
     if ctx.channel.name == 'help':
         await ctx.reply(getLang("Misc", "helpBlock"))
@@ -431,7 +431,7 @@ def message_check(channel=None, author=None, content=None, ignore_bot=True, lowe
 async def _setGMCChannel(ctx):
     role_names = [role.name for role in ctx.author.roles]
 
-    if "Gamemaster" not in role_names:
+    if not checkGM(ctx):
         await ctx.reply(getLang("GMChannel", "gmc_1"))
         return
 
@@ -462,33 +462,32 @@ def updateConfig(field, value):
 
 
 statuses = {
-    "pending": "Pending",
-    "kill": "Dead",
-    "approve": "Approved",
-    "deny": "Denied",
-    "bp": "Denied"
+    getLang("Status", "cmd_st_0"): getLang("Status", "conv_st_0"),
+    getLang("Status", "cmd_st_1"): getLang("Status", "conv_st_1"),
+    getLang("Status", "cmd_st_2"): getLang("Status", "conv_st_2"),
+    getLang("Status", "cmd_st_3"): getLang("Status", "conv_st_2"),
+    getLang("Status", "cmd_st_4"): getLang("Status", "conv_st_4")
 }
 
 
-@bot.command()
+@bot.command(aliases=[getLang("Status", "cmd_st_3")])
 async def bp(ctx, charID):
-    await approve(ctx, charID,
-                  reason="This character does not meet our minimum quality requirements, and requires expansion in every field in its current state. Please read the #rules, #lore and #policy. I would recommend looking through already approved characters to get an idea of the quality we expect. (rp!search status approved in #bots)")
+    ctx.invoked_with = getLang("Status", "cmd_st_3")
+    await approve(ctx, charID, reason=getLang("Status", "st_1").format(charID))
 
 
 @bot.command(aliases=['pending', 'deny', 'kill'])
 async def approve(ctx, charID, *, reason: str = ''):
     if reason == '' and not ctx.message.attachments:
-        reason = 'No Reason Given'
+        reason = getLang("Status", "st_2")
     if len(reason) > 1750:
-        await ctx.reply("The reason is too long! Try cutting it down or putting it in a text file!")
+        await ctx.reply(getLang("Status", "st_3"))
         return
     await _changeStatus(ctx, charID=charID, charStatus=statuses[ctx.invoked_with], reason=reason)
 
 async def checkGM(ctx):
     role_names = [role.name for role in ctx.author.roles]
-
-    if "Gamemaster" not in role_names:
+    if getLang("Misc", "gm") not in role_names:
         return False
     else:
         return True
@@ -503,47 +502,45 @@ async def alertUser(ctx, charID, status, reason):
     user = ctx.guild.get_member(int(ownerID))
 
     if user == None:
-        await ctx.reply(
-            f"I was unable to send a message to the owner of Character {charID}. User either does not exist or has left the server.")
+        await ctx.reply(getLang("Status", "st_4"))
         return
 
     try:
-        await user.send(
-            f"The status of character ID **{charID}** (Name: **{name[0:100]}**) has been set to `{status}` by {ctx.author.mention} for reason:\n{reason}")
-    except:
-        ctx.reply(f"I was unable to send a message to the owner of Character {charID}. They may have their DMs closed!")
+        await user.send(getLang("Status", "st_5").format(charID, name[0:100], status, ctx.author.mention, reason))
+    except Exception:
+        await ctx.reply(getLang("Status", "st_6").format(charID))
 
 
 async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
     if not await checkGM(ctx):
-        await ctx.reply("You do not have permission to do this!")
+        await ctx.reply(getLang("Status", "st_7"))
         return
 
     if charID.isnumeric():
         charInt = int(charID)
     else:
-        await ctx.reply("That is not a valid character ID!")
+        await ctx.reply(getLang("Status", "st_8"))
         return
 
     if ctx.message.attachments:
-        reason = f"{reason}\n({str(ctx.message.attachments[0].url)})"
+        reason = f"{reason}\n{str(ctx.message.attachments[0].url)}"
 
     cursor = conn.cursor()
     sql = '''UPDATE charlist SET status = ? WHERE charID is ?'''
     cursor.execute(sql, [charStatus, charInt])
     conn.commit()
 
-    if charStatus == 'Approved':
+    if charStatus == getLang("Status", "conv_st_1"):
         charData = _getCharDict(charInt)
         userid = charData["Owner"]
         user = ctx.guild.get_member(int(userid))
-        role = get(ctx.guild.roles, name="Roleplayer")
+        role = get(ctx.guild.roles, name=getLang("Misc", "rp"))
         await user.add_roles(role)
 
     await alertUser(ctx, charInt, charStatus, reason)
-    await ctx.reply(f"Character `ID: {charID}` has been set to `{charStatus}`")
+    await ctx.reply(getLang("Status", "st_9").format(charID, charStatus))
     logChannel = bot.get_channel(LogChannel())
-    await logChannel.send(f"{ctx.author} set character ID {charInt} to status {charStatus} with reason:\n{reason}")
+    await logChannel.send(getLang("Status", "st_10").format(ctx.author, charInt, charStatus, reason))
 
 
 async def reRegister(ctx, charID):
@@ -553,63 +550,67 @@ async def reRegister(ctx, charID):
     owner = cursor.fetchone()
 
     if owner is None:
-        await ctx.reply("That character does not exist!")
+        await ctx.reply(getLang("Register", "rg_1"))
         return
     else:
         ownerP = owner[0]
 
     if int(ownerP) != ctx.author.id:
-        await logMSG(f"<@{ctx.author.id} tried editing a character belonging to <@{ownerP}>!")
-        await ctx.reply("You do not own this character!")
+        await logMSG(getLang("Log", "lg_9").format(ctx.author.id, ownerP))
+        await ctx.reply(getLang("Register", "rg_2"))
         return
 
     charData = _getCharDict(int(charID))
 
     if charData == 'INVALID CHARACTER':
-        ctx.reply("That is not a valid character!")
+        ctx.reply(getLang("Register", "rg_1"))
 
     cfields = {
-        "name": '',
-        "gender": '',
-        "age": '',
-        "abilities/tools": '',
-        "appearance": '',
-        "background": '',
-        "personality": '',
-        "prefilled": '',
+        getLang("Fields", "name"): '',
+        getLang("Fields", "gender"): '',
+        getLang("Fields", "age"): '',
+        getLang("Fields", "abilities/tools"): '',
+        getLang("Fields", "appearance"): '',
+        getLang("Fields", "background"): '',
+        getLang("Fields", "personality"): '',
+        getLang("Fields", "prefilled"): '',
     }
 
     owner = charData["Owner"]
     status = charData["Status"]
-    cfields['name'] = charData["Name"]
-    cfields['age'] = charData["Age"]
-    cfields['gender'] = charData["Gender"]
-    cfields['abilities/tools'] = charData["Abilities/Tools"]
-    cfields['appearance'] = charData["Appearance"]
-    cfields['background'] = charData["Background"]
-    cfields['personality'] = charData["Personality"]
-    cfields['prefilled'] = charData["Prefilled Application"]
+    cfields[getLang("Fields", "name")] = charData["Name"]
+    cfields[getLang("Fields", "age")] = charData["Age"]
+    cfields[getLang("Fields", "gender")] = charData["Gender"]
+    cfields[getLang("Fields", "abilities/tools")] = charData["Abilities/Tools"]
+    cfields[getLang("Fields", "appearance")] = charData["Appearance"]
+    cfields[getLang("Fields", "background")] = charData["Background"]
+    cfields[getLang("Fields", "personality")] = charData["Personality"]
+    cfields[getLang("Fields", "prefilled")] = charData["Prefilled Application"]
 
     embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
 
     try:
-        await ctx.author.send("Here is your character currently.", embed=embedV)
+        await ctx.author.send(getLang("Register", "rg_3"), embed=embedV)
     except:
-        filePath = charToTxt(charID=charID, owner=owner, status=status, name=cfields['name'], age=cfields['age'],
-                             gender=cfields['gender'], abil=cfields['abilities/tools'],
-                             appear=cfields['appearance'], backg=cfields['background'], person=cfields['personality'],
-                             prefilled=cfields['prefilled'], ctx=ctx)
+        filePath = charToTxt(charID=charID, owner=owner, status=status, name=cfields[getLang("Fields", "name")],
+                             age=cfields[getLang("Fields", "age")],
+                             gender=cfields[getLang("Fields", "gender")],
+                             abil=cfields[getLang("Fields", "abilities/tools")],
+                             appear=cfields[getLang("Fields", "appearance")],
+                             backg=cfields[getLang("Fields", "background")],
+                             person=cfields[getLang("Fields", "personality")],
+                             prefilled=cfields[getLang("Fields", "prefilled")], ctx=ctx)
         charFile = open(filePath, 'r')
 
         try:
-            await ctx.author.send("Here is your character currently.", file=discord.File(filePath))
+            await ctx.author.send(getLang("Register", "rg_3"), file=discord.File(filePath))
         except:
-            await ctx.reply("Unable to send a DM! Please check your privacy settings and try again.")
+            await ctx.reply(getLang("Register", "rg_4"))
             return
         charFile.close()
         clearLog()
 
-    await ctx.reply(":mailbox_with_mail: Please check your DMs!")
+    await ctx.reply(getLang("Register", "rg_5"))
 
     user = ctx.author
     registerLoop = True
@@ -637,52 +638,57 @@ async def reRegister(ctx, charID):
         presfields = ''
 
         if not blankFields == '':
-            presfields = f"\nYou can also add one of the following fields that are not currently present within your application:\n {blankFields}\nTo cancel, type 'exit'."
+            presfields = "\n" + getLang("Register", "rg_6").format(blankFields)
 
-        await user.send(
-            f"What field would you like to modify? Current Fields:\n{fullFields}" + presfields + "\nTo preview your character, type `preview`. If you are done, type `done` to resubmit your character.\nIf you wish to cancel, type 'exit'")
+        await user.send(getLang("Register", "rg_7").format(fullFields, presfields))
 
         field = await getdm(ctx)
         selector = field.lower()
 
         if selector in cfields:
-            await user.send(f"What would you like field {selector.capitalize()} to say?")
+            await user.send(getLang("Register", "rg_8").format(selector.capitalize()))
             cfields[selector] = await getdm(ctx)
-            await user.send(f"Field {selector.capitalize()} has been changed.")
-        elif selector == 'preview':
+            await user.send(getLang("Register", "rg_9").format(selector.capitalize()))
+        elif selector == getLang("Fields", "preview"):
             try:
                 await user.send(embed=previewChar(cfields=cfields, prefilled=None, name=cfields['name']))
             except:
-                previewTxt = charToTxt(0, ctx.author.id, 'Preview', cfields["name"], cfields["age"], cfields["gender"],
-                                       cfields["abilities/tools"], cfields["appearance"], cfields["background"],
-                                       cfields["personality"], cfields["prefilled"], ctx, '')
-                await user.send("Your character is too long to preview, so I have dumped it to a file!",
-                                file=discord.File(previewTxt))
+                previewTxt = charToTxt(charID=0, owner=ctx.author.id, status='Preview',
+                                       name=cfields[getLang("Fields", "name")],
+                                       age=cfields[getLang("Fields", "age")],
+                                       gender=cfields[getLang("Fields", "gender")],
+                                       abil=cfields[getLang("Fields", "abilities/tools")],
+                                       appear=cfields[getLang("Fields", "appearance")],
+                                       backg=cfields[getLang("Fields", "background")],
+                                       person=cfields[getLang("Fields", "personality")],
+                                       prefilled=cfields[getLang("Fields", "prefilled")], ctx=ctx)
+
+                await user.send(getLang("Register", "rg_10"), file=discord.File(previewTxt))
         elif selector == 'done':
 
-            await user.send(
-                f"Your character (ID {charID}) has been resubmitted and will be reviewed at the next available oppurtunity.")
-            resub = await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
-                                  gender=cfields["gender"],
-                                  abil=cfields["abilities/tools"],
-                                  appear=cfields["appearance"], backg=cfields["background"],
-                                  person=cfields["personality"],
-                                  prefilled=cfields["prefilled"], charID=charID)
-
+            await user.send(getLang("Register", "rg_11").format(charID))
+            resub = await charadd(owner=owner, name=cfields[getLang("Fields", "name")],
+                                  age=cfields[getLang("Fields", "age")],
+                                  gender=cfields[getLang("Fields", "gender")],
+                                  abil=cfields[getLang("Fields", "abilities/tools")],
+                                  appear=cfields[getLang("Fields", "appearance")],
+                                  backg=cfields[getLang("Fields", "background")],
+                                  person=cfields[getLang("Fields", "personality")],
+                                  prefilled=cfields[getLang("Fields", "prefilled")], charID=charID)
             await alertGMs(ctx, charID, resub=True)
             registerLoop = False
             return
         elif selector == 'exit':
-            await user.send("Exiting Character Resubmission!")
+            await user.send(getLang("Register", "rg_12"))
             return
         else:
-            await user.send("That is not a valid field!")
+            await user.send(getLang("Register", "rg_13"))
 
 
 @bot.command(pass_context=True, aliases=['reregister', 'submit', 'resubmit'])
 async def register(ctx, charID=''):
     if ctx.author.id in currentlyRegistering:
-        await ctx.reply("You are already registering a character!")
+        await ctx.reply(getLang("Register", "rg_14"))
         return
 
     currentlyRegistering.append(ctx.author.id)
@@ -693,17 +699,14 @@ async def register(ctx, charID=''):
             ctx.author.id)  # Fixed Bug with sending 'Please check your DMs!' as well as 'You do not own this character!' - Thanks @Venom134
         return
 
-    await ctx.reply(":mailbox_with_mail: Please check your DMs!")
+    await ctx.reply(getLang("Register", "rg_5"))
 
-    await logMSG(f"Register command from {ctx.author}")
+    await logMSG(getLang("Log", "lg_10").format(ctx.author))
     user = ctx.author
     try:
-        await user.send("**Let's submit your character.** \n \n"
-                        "If you're submitting a regular character, please type `next` and follow the prompts. \n"
-                        "If you already have a character typed out, please type `prefilled` to submit a prefilled application. *(Not Recommended)* \n"
-                        "If you do not wish to register, type `exit` to quit at any point.")
+        await user.send(getLang("Register", "rg_15"))
     except:
-        await ctx.reply("Unable to send a DM! Please check your privacy settings and try again!")
+        await ctx.reply(getLang("Register", "rg_4"))
         currentlyRegistering.remove(user.id)
         return
     await _registerChar(ctx, user)
@@ -712,7 +715,7 @@ async def register(ctx, charID=''):
 async def alertGMs(ctx, charID, resub=False):
     embedC = await _view(ctx, idinput=str(charID), returnEmbed=True)
 
-    embedC.set_footer(text=f"To change the status of this character, type rp!<approve|pending|deny> {charID}.")
+    embedC.set_footer(text=getLang("Register", "rg_16").format(charID))
 
     channelID = GMChannel()
 
@@ -721,20 +724,16 @@ async def alertGMs(ctx, charID, resub=False):
     isResubmit = ''
 
     if resub is True:
-        isResubmit = f'**RESUBMISSION FOR CHARACTER ID {charID}**\n'
+        isResubmit = getLang("Register", "rg_17").format(charID)
     else:
         isResubmit = ''
 
-    GMRole = discord.utils.get(ctx.guild.roles, name="Gamemaster")
+    GMRole = discord.utils.get(ctx.guild.roles, name=getLang("Misc", "gm"))
 
     try:
-        await channel.send(
-            f"<@&{GMRole.id}>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
-            embed=embedC)
+        await channel.send(getLang("Register", "rg_18").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
+                           embed=embedC)
     except HTTPException as e:
-
-        await logHandler(
-            f"Unable to post raw character data on submission. Compressing to text file.\nFull Exception:\n{e}")
 
         charData = _getCharDict(charID)
 
@@ -753,12 +752,10 @@ async def alertGMs(ctx, charID, resub=False):
 
         charFile = open(filePath, 'r')
 
-        await channel.send(
-            f"<@&363821920854081539>\n{isResubmit}Character application from {ctx.author} (ID: {ctx.author.id})\n",
-            file=discord.File(filePath))
+        await channel.send(getLang("Register", "rg_18").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
+                           embed=embedC, file=discord.File(filePath))
     except Exception as e:
-        await logHandler(
-            f"There was a fatal error trying to alert upon registration of a character. Full Exception:\n{e}")
+        await logHandler(getLang("Log", "lg_11"))
 
 
 def getMember(owner, ctx):
@@ -774,20 +771,20 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
     charFile = open(path, 'x')
 
     charTXT = (f"Character Information for Character ID {charID}\n"
-               f"Owner: {getMember(owner, ctx) or owner + ' (Owner has left server.)'}\n"
-               f"Status: {status}\n\n"
-               f"Name: {name}\n\n")
-    if age != '': charTXT = charTXT + f"Age: {age}\n\n"
-    if gender != '': charTXT = charTXT + f"Gender: {gender}\n\n"
-    if abil != '': charTXT = charTXT + f"Abilities/Tools: {abil}\n\n"
-    if appear != '': charTXT = charTXT + f"Appearance: {appear}\n\n"
-    if backg != '': charTXT = charTXT + f"Background: {backg}\n\n"
-    if person != '': charTXT = charTXT + f"Personality: {person}\n\n"
+               f"Owner: {getMember(owner, ctx) or owner + getLang('Fields', 'left').capitalize()}"
+               f"{getLang('Fields', 'status').capitalize()}: {status}\n\n"
+               f"{getLang('Fields', 'name').capitalize()}: {name}\n\n")
+    if age != '': charTXT = charTXT + f"{getLang('Fields', 'age').capitalize()}: {age}\n\n"
+    if gender != '': charTXT = charTXT + f"{getLang('Fields', 'gender').capitalize()}: {gender}\n\n"
+    if abil != '': charTXT = charTXT + f"{getLang('Fields', 'abilities/tools').capitalize()}: {abil}\n\n"
+    if appear != '': charTXT = charTXT + f"{getLang('Fields', 'appearance').capitalize()}: {appear}\n\n"
+    if backg != '': charTXT = charTXT + f"{getLang('Fields', 'background').capitalize()}: {backg}\n\n"
+    if person != '': charTXT = charTXT + f"{getLang('Fields', 'personality').capitalize()}: {person}\n\n"
     if misc != '': charTXT = charTXT + misc
     if prefilled == '' or prefilled is None:
         pass
     else:
-        charTXT = charTXT + f"Prefilled: {prefilled}\n\n"
+        charTXT = charTXT + f"{getLang('Fields', 'prefilled').capitalize()}: {prefilled}\n\n"
 
     charFile.write(charTXT)
 
@@ -821,36 +818,38 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
         charData = _getCharDict(sanID)
 
         if charData == 'INVALID CHARACTER':
-            await ctx.reply("That is not a valid character!")
+            await ctx.reply(getLang("View", "v_1"))
             return
 
         color = 0x000000
 
-        if (charData["Status"] == 'Pending'):
+        if (charData[getLang("Fields", "status")] == getLang("Status", "conv_st_0")):
             color = 0xFFD800
-        elif (charData["Status"] == 'Approved'):
+        elif (charData[getLang("Fields", "status")] == getLang("Status", "conv_st_1")):
             color = 0x00FF00
-        elif (charData["Status"] == 'Denied'):
+        elif (charData[getLang("Fields", "status")] == getLang("Status", "conv_st_2")):
             color = 0xFF0000
 
-        member = ctx.message.guild.get_member(int(charData["Owner"]))
+        member = ctx.message.guild.get_member(int(charData[getLang("Fields", "owner")]))
 
-        embedVar = discord.Embed(title=f"Viewing Character {sanID}",
-                                 description=f"Showing Information for Character ID: {sanID}", color=color,
+        embedVar = discord.Embed(title=getLang("View", "v_2").format(sanID),
+                                 description=getLang("View", "v_3").format(sanID), color=color,
                                  inline=False)
 
-        noDisplay = ['charID', 'misc', 'Owner']
+        noDisplay = ['charID', 'misc', getLang("Fields", "owner").capitalize()]
 
-        charOwner = ctx.guild.get_member(int(charData["Owner"]))
+        charOwner = ctx.guild.get_member(int(charData[getLang("Fields", "owner")]))
 
-        embedVar.add_field(name='Owner', value=charOwner or f'{charData["Owner"]} (User has left server)', inline=False)
+        embedVar.add_field(name=getLang("Fields", "owner").capitalize(),
+                           value=charOwner or f'{charData[getLang("Fields", "owner")]} {getLang("Fields", "left")}',
+                           inline=False)
 
         for i in charData:
             if i not in noDisplay:
                 if charData[i] == '' or charData[i] is None:
                     pass
                 else:
-                    embedVar.add_field(name=i, value=charData[i], inline=False)
+                    embedVar.add_field(name=i.capitalize(), value=charData[i], inline=False)
 
         if charData["misc"] == '{}':
             pass
@@ -874,14 +873,18 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 await ctx.author.send(embed=embedVar)
         except:
             if dmchannel is False:
-                await ctx.reply(f"This character was too long, so I have dumped it to a file.")
+                await ctx.reply(getLang("View", "v_4"))
             else:
-                ctx.author.send(f"This character was too too long, so I have dumped it to a file.")
-            filePath = charToTxt(charID=charData["charID"], owner=charData["Owner"], status=charData["Status"],
-                                 name=charData["Name"], age=charData["Age"], gender=charData["Gender"],
-                                 abil=charData["Abilities/Tools"],
-                                 appear=charData["Appearance"], backg=charData["Background"],
-                                 person=charData["Personality"], prefilled=charData["Prefilled Application"],
+                ctx.author.send(getLang("View", "v_4"))
+            filePath = charToTxt(charID=charData["charID"], owner=charData[getLang("Fields", "owner")],
+                                 status=charData[getLang("Fields", "status")],
+                                 name=charData[getLang("Fields", "name")], age=charData[getLang("Fields", "age")],
+                                 gender=charData[getLang("Fields", "gender")],
+                                 abil=charData[getLang("Fields", "abilities/tools")],
+                                 appear=charData[getLang("Fields", "appearance")],
+                                 backg=charData[getLang("Fields", "background")],
+                                 person=charData[getLang("Fields", "personality")],
+                                 prefilled=charData[getLang("Fields", "prefilled")],
                                  misc=miscData, ctx=ctx)
 
             charFile = open(filePath, 'r')
@@ -921,16 +924,16 @@ def _getCharDict(charID=0):
 
     charData = {
         "charID": None,
-        "Owner": None,
-        "Status": None,
-        "Name": None,
-        "Age": None,
-        "Gender": None,
-        "Abilities/Tools": None,
-        "Appearance": None,
-        "Background": None,
-        "Personality": None,
-        "Prefilled Application": None,
+        getLang("Fields", "owner"): None,
+        getLang("Fields", "status"): None,
+        getLang("Fields", "name"): None,
+        getLang("Fields", "age"): None,
+        getLang("Fields", "gender"): None,
+        getLang("Fields", "abilities/tools"): None,
+        getLang("Fields", "appearance"): None,
+        getLang("Fields", "background"): None,
+        getLang("Fields", "personality"): None,
+        getLang("Fields", "prefilled"): None,
         "misc": None,
     }
 
@@ -949,7 +952,7 @@ def _getCharDict(charID=0):
         charData[i] = chars[x]
         x = x + 1
 
-    if (charData['Status'] == 'Disabled'):
+    if (charData[getLang("Fields", "status")] == 'Disabled'):
         return 'INVALID CHARACTER'
 
     return charData
@@ -957,24 +960,6 @@ def _getCharDict(charID=0):
 
 @bot.command(name='set', aliases=['setprop'])
 async def _set(ctx, charID, field, *, message: str):
-    '''Sets a field to a specified value. For major character revisions, please use rp!reregister <ID>
-
-    USAGE: rp!set <ID> <FIELD> <What you want the field to be>
-
-    Valid Fields:
-
-    Name
-    Age
-    Gender
-    Abilities | Abilities/Tools
-    Appearance
-    Background
-    Personality
-    Prefilled | Prefilled Application
-
-    Owner (GM ONLY)
-    Status (GM ONLY)
-    '''
 
     alertChannel = bot.get_channel(LogChannel())
 
@@ -982,50 +967,49 @@ async def _set(ctx, charID, field, *, message: str):
         fSan = convertField(field.lower())
 
         if fSan == 'charID':
-            await ctx.reply("You can not change the ID of a character!")
+            await ctx.reply(getLang("Set", "s_1"))
             return
     else:
         await _custom(ctx, charID=charID, field=field, message=message)
         return
 
-    if message == '' or message == 'delete':
+    if message == '' or message == getLang("Set", "s_2"):
         message = ''
-        if fSan == 'name':
-            await ctx.reply("You can not remove a characters' name!")
+        if fSan == getLang("Fields", "name"):
+            await ctx.reply(getLang("Set", "s_3"))
             return
         elif fSan == 'misc':
             message = '{}'
 
     if fSan == 'owner' or fSan == 'status':
         if await checkGM(ctx) is False:
-            await ctx.reply("You need to be a GM to change this!")
+            await ctx.reply(getLang("Set", "s_4"))
             return
 
     if charID.isnumeric():
         icharID = int(charID)
     else:
-        await ctx.reply("That is not a valid character ID!")
+        await ctx.reply(getLang("View", "v_1"))
         return
 
     ownerID = _charExists(icharID)
 
     if ownerID == False:
-        await ctx.reply("This character does not exist!")
+        await ctx.reply(getLang("View", "v_1"))
         return
 
     if not charPermissionCheck(ctx, ownerID):
-        await ctx.reply("You do not have permission to modify this character!")
+        await ctx.reply(getLang("Set", "s_5"))
         return
 
     _setSQL(icharID, fSan, message)
 
     if message == '':
-        await ctx.reply(f"Field {field.capitalize()} has been deleted.")
+        await ctx.reply(getLang("Set", "s_6").format(field.capitalize))
     else:
-        await ctx.reply(f"Field {field.capitalize()} has been changed.")
+        await ctx.reply(getLang("Set", "s_7").format(field.capitalize))
 
-    await alertChannel.send(
-        f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
+    await alertChannel.send(getLang("Log", "lg_12").format(ctx.author, icharID, field.capitalize(), message))
 
 
 def _setSQL(charID, field, content):
@@ -1042,52 +1026,45 @@ async def _custom(ctx, charID='', field='', *, message: str):
     if charID.isnumeric():
         icharID = int(charID)
     else:
-        await ctx.reply("That is not a valid character ID!")
+        await ctx.reply(getLang("Custom", "cs_1"))
         return
 
     charData = _getCharDict(icharID)
 
     if charData == 'INVALID CHARACTER':
-        await ctx.reply("That is not a valid character!")
+        await ctx.reply(getLang("Custom", "cs_1"))
         return
 
     if ctx.author.id != int(charData["Owner"]):
-        await ctx.reply("You do not own this character!")
+        await ctx.reply(getLang("Custom", "cs_2"))
         return
 
     customFields = json.loads(charData["misc"])
     fieldDel = False
 
-    if len(customFields) >= 12:
-        await ctx.reply(
-            "You can not have more than 12 custom fields! Either modify an existing field, or remove an unneeded field.")
-        return
-
-    if message.lower() == 'delete':
+    if message.lower() == getLang("Set", "s_2"):
         try:
             customFields.pop(field)
             fieldDel = True
         except:
-            await ctx.reply("This field does not exist!")
+            await ctx.reply(getLang("Custom", "cs_3"))
             return
     else:
         customFields[field] = message
     miscData = json.dumps(customFields)
     _setSQL(icharID, "misc", miscData)
     if fieldDel == False:
-        await ctx.reply(f"Custom field {field} has been set.")
-        await alertChannel.send(
-            f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been set to:\n`{message}`")
+        await ctx.reply(getLang("Custom", "cs_4").format(field))
+        await alertChannel.send(getLang("Custom", "lg_12").format(ctx.author, icharID, field.capitalize(), message))
         return
 
-    await ctx.reply(f"Custom field {field} has been deleted.")
+    await ctx.reply(getLang("Custom", "cs_5").format(field))
 
-    await alertChannel.send(
-        f"{ctx.author} has modified Character ID: `{icharID}`. Field `{field.capitalize()}` has been deleted.")
+    await alertChannel.send(getLang("Log", "lg_13").format(ctx.author, icharID, field.capitalize()))
 
 
 async def _custom_error(ctx, args):
-    await ctx.reply("Unable to set a custom field to a blank value!")
+    await ctx.reply(getLang("Custom", "cs_6"))
 
 
 @dataclass
@@ -1114,14 +1091,14 @@ async def getUserChars(ctx, userID, pageSize, pageID):
 
     for i in charList:
         member = ctx.message.guild.get_member(int(i.owner))
-        charListStr = f"{charListStr}**`{i.id}.`** {i.name[0:75]} (Owner: {member or i.owner})\n"
+        charListStr = getLang("GetChars", "gc_3").format(charListStr, i.id, i.name[0:75], member or i.owner) + '\n'
 
     if len(charList) == 0:
-        await ctx.reply("No characters matched the query!")
+        await ctx.reply(getLang("GetChars", "gc_1"))
         return
 
-    await ctx.reply(
-        f"List of characters belonging to {member or userID + ' (User has left server)'} (Page: {pageNo + 1} of {math.ceil(count / pageSize)})\n{charListStr}")
+    await ctx.reply(getLang("GetChars", "gc_2").format((member or userID + getLang("Fields", "left")), (pageNo + 1),
+                                                       math.ceil(count / pageSize), charListStr))
 
 
 @bot.command(name='list')
@@ -1170,29 +1147,31 @@ async def _list(ctx, pageIdentifier='', page=''):
 
     for i in charList:
         member = ctx.message.guild.get_member(int(i.owner))
-        charListStr = f"{charListStr}**`{i.id}.`** {i.name[0:75]} (Owner: {member or i.owner})\n"
+        charListStr = getLang("List", "ls_2").format(charListStr, i.id, i.name[0:75], member or i.owner) + "\n"
 
-    await ctx.reply(f"List of all characters: (Page: {pageNo + 1} of {math.ceil(count / pageSize)})\n{charListStr}")
+    await ctx.reply(getLang("List", "ls_").format(pageNo + 1, math.ceil(count / pageSize), charListStr))
 
 
-fields = ['owner', 'ownerid', 'status', 'name', 'charid', 'id', 'age', 'gender', 'abilities/tools', 'abilities',
-          'appearance', 'background', 'personality', 'prefilled', 'prefilled application', 'custom', 'misc']
+fields = [getLang("Fields", 'owner'), 'ownerid', getLang("Fields", 'status'), getLang("Fields", 'name'), 'charid', 'id',
+          getLang("Fields", 'age'), getLang("Fields", 'gender'), getLang("Fields", 'abilities/tools'), 'abilities',
+          getLang("Fields", 'appearance'), getLang("Fields", 'background'), getLang("Fields", 'personality'),
+          'prefilled', getLang("Fields", 'prefilled'), 'custom', 'misc']
 
 
 def convertField(selector):
-    if selector == 'owner' or selector == 'ownerid':
+    if selector == getLang("Fields", "owner") or selector == 'ownerid':
         return 'owner'
     if selector == 'id' or selector == 'charid':
         return 'charID'
-    if selector == 'appearance':
+    if selector == getLang("Fields", "appearance"):
         return 'appear'
-    if selector == 'background':
+    if selector == getLang("Fields", 'background'):
         return 'backg'
-    if selector == 'abilities/tools' or selector == 'abilities':
+    if selector == getLang("Fields", 'abilities/tools') or selector == 'abilities':
         return 'abil'
-    if selector == 'personality':
+    if selector == getLang("Fields", 'personality'):
         return 'person'
-    if selector == 'prefilled' or selector == 'prefilled application':
+    if selector == 'prefilled' or selector == getLang("Fields", 'prefilled'):
         return 'prefilled'
     if selector == 'misc' or selector == 'custom':
         return 'misc'
@@ -1201,15 +1180,9 @@ def convertField(selector):
 
 @bot.command(name='search')
 async def _search(ctx, selector='', extra1='', extra2=''):
-    '''Searches for a character using fields provided.
-
-
-    USAGE:
-    rp!search <NAME> - Searches for characters with a specific name.
-    rp!search <FIELD> <QUERY> - Searches a specific field for a search query.'''
 
     if selector == '':
-        await ctx.reply("You have not entered anything to search!")
+        await ctx.reply(getLang("Search", "sr_1"))
         return
 
     if (ctx.message.mentions):
@@ -1257,37 +1230,32 @@ async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
 
     for i in charList:
         member = ctx.message.guild.get_member(int(i.owner))
-        charListStr = f"{charListStr}**`{i.id}.`** {i.name[0:30]} (Owner: {member or i.owner})\n"
+        charListStr = getLang("GetChars", "gc_3").format(charListStr, i.id, i.name[0:75], member or i.owner) + '\n'
 
     await ctx.reply(
-        f"List of characters meeting search criteria (Page {pageNo + 1} of {math.ceil(count / 25)}):\n{charListStr}")
+        f'{getLang("Search", "sr_2").format(pageNo + 1, math.ceil(count / 25))} \n{charListStr}')
 
 
 @bot.command(name='delete')
 async def _delete(ctx, charDel='', confirmation=''):
-    '''Deletes a specified character.
-
-    USAGE:
-    rp!delete <ID>'''
 
     if charDel.isnumeric():
-        if confirmation.lower() == 'confirm':
+        if confirmation.lower() == getLang("Delete", "dl_1"):
             await _deleteChar(ctx, int(charDel))
             return
         else:
-            await ctx.reply("Are you sure you wish to delete this character? Please type `confirm` if you are sure.")
+            await ctx.reply(getLang("Delete", "dl_2"))
             response = await bot.wait_for("message", check=message_check())
-            if response.content.lower() == 'confirm':
+            if response.content.lower() == getLang("Delete", "dl_1"):
                 await _deleteChar(ctx, int(charDel))
                 return
     else:
         await ctx.reply("Invalid Character ID!")
 
-
 @bot.command(name='undelete', aliases=['recover'])
 async def _undelete(ctx, charID):
     if not await checkGM(ctx):
-        await ctx.reply("You do not have permission to do this!")
+        await ctx.reply(getLang("Delete", "dl_3"))
         return
 
     if charID.isnumeric():
@@ -1297,7 +1265,7 @@ async def _undelete(ctx, charID):
 
     cursor.execute("UPDATE charlist SET status = 'Pending' WHERE charID is ?", [icharID])
     conn.commit()
-    await ctx.reply(f"Character {icharID} has been recovered.")
+    await ctx.reply(getLang("Delete", "dl_").format(icharID))
 
 
 def charPermissionCheck(ctx, ownerID):
@@ -1305,7 +1273,7 @@ def charPermissionCheck(ctx, ownerID):
 
     authorID = ctx.author.id
 
-    if int(ownerID) == authorID or "Gamemaster" in role_names:
+    if int(ownerID) == authorID or getLang("Misc", "gm") in role_names:
         return True
     else:
         return False
@@ -1328,7 +1296,7 @@ async def _deleteChar(ctx, charID):
     ownerP = _charExists(charID)
 
     if ownerP is False:
-        await ctx.reply("That character does not exist!")
+        await ctx.reply(getLang("Delete", "dl_5"))
         return
 
     cursor = conn.cursor()
@@ -1338,7 +1306,7 @@ async def _deleteChar(ctx, charID):
         conn.commit()
         await ctx.reply(f"Character {charID} has been deleted.")
     else:
-        await ctx.reply("You do not own this character!")
+        await ctx.reply(getLang("Delete", "dl_6"))
 
 
 async def getdm(ctx):
@@ -1353,40 +1321,39 @@ async def getdm(ctx):
 
 
 def previewChar(cfields=None, prefilled=None, name=None):
-    embedVar = discord.Embed(title=f"Previewing Your Character",
-                             description=f"Showing Preview for Character", color=0xffD800)
+    embedVar = discord.Embed(title=getLang("Register", "pr_1"),
+                             description=getLang("Register", "pr_2"), color=0xffD800)
 
     if cfields is not None:
-        embedVar.add_field(name="Name:", value=cfields['name'], inline=True)
-        if cfields['age'] != '': embedVar.add_field(name="Age:", value=cfields['age'], inline=False)
-        if cfields['gender'] != '': embedVar.add_field(name="Gender:", value=cfields['gender'], inline=False)
-        if cfields['abilities/tools'] != '': embedVar.add_field(name="Abilities/Tools:",
-                                                                value=cfields['abilities/tools'], inline=False)
-        if cfields['appearance'] != '': embedVar.add_field(name="Appearance:", value=cfields['appearance'],
+        embedVar.add_field(name=getLang("Fields", "name").capitalize() + ':', value=cfields[getLang("Fields", 'name')],
+                           inline=True)
+        if cfields['age'] != '': embedVar.add_field(name=getLang("Fields", "age").capitalize() + ':',
+                                                    value=cfields[getLang("Fields", 'age')], inline=False)
+        if cfields['gender'] != '': embedVar.add_field(name=getLang("Fields", "gender").capitalize() + ':',
+                                                       value=cfields[getLang("Fields", 'gender')], inline=False)
+        if cfields['abilities/tools'] != '': embedVar.add_field(
+            name=getLang("Fields", "abilities/tools").capitalize() + ':',
+            value=cfields[getLang("Fields", 'abilities/tools')], inline=False)
+        if cfields['appearance'] != '': embedVar.add_field(name=getLang("Fields", "appearance").capitalize() + ':',
+                                                           value=cfields[getLang("Fields", 'appearance')],
                                                            inline=False)
-        if cfields['background'] != '': embedVar.add_field(name="Background:", value=cfields['background'],
+        if cfields['background'] != '': embedVar.add_field(name=getLang("Fields", "background").capitalize() + ':',
+                                                           value=cfields[getLang("Fields", 'background')],
                                                            inline=False)
-        if cfields['personality'] != '': embedVar.add_field(name="Personality:", value=cfields['personality'],
+        if cfields['personality'] != '': embedVar.add_field(name=getLang("Fields", "personality").capitalize() + ':',
+                                                            value=cfields[getLang("Fields", 'personality')],
                                                             inline=False)
 
     if prefilled:
-        embedVar.add_field(name="Name:", value=name, inline=False)
-        embedVar.add_field(name="Prefilled Application:", value=prefilled, inline=False)
+        embedVar.add_field(name=getLang("Fields", "name").capitalize() + ':', value=name, inline=False)
+        embedVar.add_field(name=getLang("Fields", "prefilled").capitalize() + ':', value=prefilled, inline=False)
 
     return embedVar
 
 
 @bot.command()
 async def invite(ctx):
-    await ctx.reply("This bot is a private bot and is not currently available to invite.\n"
-                    "If you wish to run it yourself, you can download the source code here:\n"
-                    "https://github.com/OblivionCreator/mettaton-2.py\n"
-                    "`THIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.`")
-
-
-canonDeny = ["sans", "papyrus", "frisk", "flowey", "undyne", "alphys", "mettaton", "asgore", "asriel",
-             "chara", "muffet", "toriel", "kris", "ralsei", "betty",
-             "fallenfire", "gaster"]  # List of characters the bot will auto deny for. BE SPECIFIC!
+    await ctx.reply(getLang("Misc", "invite"))
 
 
 async def canonCheck(response, user):
@@ -1394,14 +1361,11 @@ async def canonCheck(response, user):
     response = response.lower()
 
     if any(canon_char in response for canon_char in getDenyList()):  # Thanks Atlas!
-        await user.send(
-            "**Canon Characters are not allowed. Please read the <#697160109700284456> and <#697153009599119493>**\n"
-            "Exiting Character Creation.")
+        await user.send(getLang("Misc", "autodeny"))
 
         logChannel = bot.get_channel(LogChannel())
 
-        await logChannel.send(
-            f"{user} ({user.id}) tried submitting a canon character! (Name {response} matched one or more characters in the deny list.)")
+        await logChannel.send(getLang("Log", "lg_14").format(user, user.id, response))
 
         currentlyRegistering.remove(user.id)
         return True
@@ -1424,7 +1388,7 @@ async def _registerChar(ctx, user):
         resmsg = resmsg.lower()
 
         if resmsg == 'exit':
-            await user.send("Character submission aborted.")
+            await user.send(getLang("Register", "rg_19"))
             currentlyRegistering.remove(user.id)
             isRegistering = False
             return
@@ -1435,29 +1399,25 @@ async def _registerChar(ctx, user):
             prefilled = None
 
             cfields = {
-                "name": None,
-                "gender": None,
-                "age": None,
-                "abilities/tools": None,
-                "appearance": None,
-                "background": None,
-                "personality": None,
+                getLang("Fields", "name"): None,
+                getLang("Fields", "gender"): None,
+                getLang("Fields", "age"): None,
+                getLang("Fields", "abilities/tools"): None,
+                getLang("Fields", "appearance"): None,
+                getLang("Fields", "background"): None,
+                getLang("Fields", "personality"): None,
             }
 
-            await user.send(
-                "Great! Let's start filling out your character. First of all, what is your characters name?")
+            await user.send(getLang("Register", "rg_20"))
 
             response = await getdm(ctx)
 
             if await canonCheck(response, user):
                 return
 
-            cfields['name'] = response
+            cfields[getLang("Fields", "name")] = response
 
-            await user.send("Now that your character has a name, let's start filling out some details.\n"
-                            "What field would you like to edit?\n"
-                            "Remaining fields to specify: `Age`, `Gender`, `Abilities/Tools`, `Appearance`, `Background`, `Personality`\n"
-                            "Fields already specified: `Name`\nYou can type 'exit' to quit at any time.")
+            await user.send(getLang("Register", "rg_"))
 
             while not charcomplete:
 
@@ -1465,7 +1425,7 @@ async def _registerChar(ctx, user):
 
                 response = await getdm(ctx)
                 if response.lower() == 'exit':
-                    await user.send("Exiting Character Creation!")
+                    await user.send(getLang("Register", "rg_19"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
                     return
@@ -1473,8 +1433,7 @@ async def _registerChar(ctx, user):
 
                 if response.lower() == 'done':
                     if not submitChar:
-                        await user.send(
-                            "You character is not complete! Please fill the remaining fields before trying to submit your character.")
+                        await user.send(getLang("Register", "rg_22"))
                     else:
                         submitChar = True
                         charcomplete = True
@@ -1482,39 +1441,40 @@ async def _registerChar(ctx, user):
                         owner = ctx.author.id
                         prefilled = None
 
-                        charID = await charadd(owner=owner, name=cfields["name"], age=cfields["age"],
-                                               gender=cfields["gender"],
-                                               abil=cfields["abilities/tools"],
-                                               appear=cfields["appearance"], backg=cfields["background"],
-                                               person=cfields["personality"],
+                        charID = await charadd(owner=owner, name=cfields[getLang("Fields", "name")],
+                                               age=cfields[getLang("Fields", "age")],
+                                               gender=cfields[getLang("Fields", "gender")],
+                                               abil=cfields[getLang("Fields", "abilities/tools")],
+                                               appear=cfields[getLang("Fields", "appearance")],
+                                               backg=cfields[getLang("Fields", "background")],
+                                               person=cfields[getLang("Fields", "personality")],
                                                prefilled=prefilled)
 
-                        await user.send("Character has been submitted with ID: " + str(charID))
+                        await user.send(getLang("Register", "rg_23").format(int(charID)))
                         currentlyRegistering.remove(user.id)
                         await alertGMs(ctx, charID)
                         return
-                elif response.lower() == 'exit':
-                    await user.send(
-                        "Exiting Character Creation!")
+                elif response.lower() == getLang("Register", "rg_24"):
+                    await user.send(getLang("Register", "rg_19"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
                     return
-                elif response.lower() == 'preview':
+                elif response.lower() == getLang("Register", "rg_25"):
                     try:
                         await user.send(embed=previewChar(cfields=cfields))
                     except:
-                        await user.send("This character is too long to preview!")
+                        await user.send(getLang("Register", "rg_26"))
                 elif selector in cfields:
-                    await user.send("What would you like field `" + selector.capitalize() + "` to say?")
+                    await user.send(getLang("Register", "rg_").format(selector.capitalize()))
                     response = await getdm(ctx)
 
-                    if selector.lower() == 'name':
+                    if selector.lower() == getLang("Fields", "name"):
                         if await canonCheck(response, user):
                             break
                             return
 
                     if response.lower() == 'exit':
-                        await user.send("Exiting Character Creation!")
+                        await user.send(getLang("Register", "rg_19"))
                         isRegistering = False
                         currentlyRegistering.remove(user.id)
                         return
@@ -1540,61 +1500,50 @@ async def _registerChar(ctx, user):
                         specifyDone = (specifyDone + "`" + word2.capitalize() + "`, ")
 
                     if not toSpecify:
-                        await user.send(
-                            f"Field `{selector.capitalize()}` has been changed.\n"
-                            "All fields have been completed. If you wish to submit your character, type `Done`. To preview your character, type `Preview`.\n"
-                            f"Or if you wish to change a field, enter the field you wish to modify: {specifyDone}")
+                        await user.send(getLang("Register", "rg_28").format(selector.capitalize(), specifyDone))
                         submitChar = True
                     else:
                         await user.send(
-                            f"Field `{selector.capitalize()}` has been changed.\n"
-                            "What field would you like to edit?\n"
-                            f"Remaining fields to specify: {toSpecify}\n"
-                            f"Field(s) already specified: {specifyDone}")
-
+                            getLang("Register", "rg_29").format(selector.capitalize(), toSpecify, specifyDone))
                 else:
-                    await user.send("That is not a valid field!")
+                    await user.send(getLang("Register", "rg_30"))
 
             return
-        elif resmsg == 'prefilled':
+        elif resmsg == getLang("Fields", "prefilled"):
 
             charcomplete = False
 
-            await user.send(
-                "Great! First of all, Before submitting your application, what is your characters name?")
+            await user.send(getLang("Register", "rg_31"))
             response = await getdm(ctx)
 
             if await canonCheck(response, user):
                 return
 
-            if response.lower() == 'exit':
-                await user.send("Exiting Character Creation!")
+            if response.lower() == getLang("Register", "rg_24"):
+                await user.send(getLang("Register", "rg_19"))
                 isRegistering = False
                 currentlyRegistering.remove(user.id)
                 return
 
             name = response
 
-            await user.send(
-                "Let's submit your character. \nPlease upload, link or paste in your character. Web links, text files and raw text are all accepted, and will be handled appropriately.")
+            await user.send(getLang("Register", "rg_32"))
             prefilled = await getdm(ctx)
             if prefilled.lower() == 'exit':
-                await user.send("Exiting Character Creation!")
+                await user.send(getLang("Register", "rg_19"))
                 isRegistering = False
                 currentlyRegistering.remove(user.id)
                 return
 
-            charFields = ["prefilled application", "name"]
+            charFields = [getLang("Fields", "prefilled"), getLang("Fields", "name")]
 
             while not charcomplete:
-                await user.send(
-                    "Your character is ready to submit. If you wish to change any fields, please state what you would like to change. If you would like to submit your character, enter `Done` or to preview your character, enter `Preview`\n"
-                    "Fields: `Name`, `Prefilled Application`")
+                await user.send(getLang("Register", "rg_33"))
                 response = await getdm(ctx)
                 selector = response.lower()
 
                 if selector == 'exit':
-                    await user.send("Exiting Character Creation!")
+                    await user.send(getLang("Register", "rg_19"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
                     return
@@ -1604,40 +1553,39 @@ async def _registerChar(ctx, user):
 
                         charID = await charadd(owner=ctx.author.id, name=name, prefilled=prefilled)
 
-                        await user.send("Great! Your character has been submitted with ID: **" + str(charID) + "**")
+                        await user.send(getLang("Register", "rg_34").format(str(charID)))
                         currentlyRegistering.remove(user.id)
                         await alertGMs(ctx, charID)
                         charcomplete = True
                         return
-                    elif selector == 'preview':
+                    elif selector == getLang("Register", "rg_25"):
                         try:
                             await user.send(embed=previewChar(prefilled=prefilled, name=name))
                         except:
-                            await user.send("This character is too long to preview!")
+                            await user.send(getLang("Register", "rg_26"))
 
                     else:
-                        await user.send("That is not a valid field! Please try again.")
-                elif selector == 'name':
-                    await user.send("What would you like the name to be?")
+                        await user.send(getLang("Register", "rg_30"))
+                elif selector == getLang("Fields", "name"):
+                    await user.send(getLang("Register", "rg_35"))
                     response = await getdm(ctx)
 
                     if await canonCheck(response, user):
                         return
 
                     if response.lower() == 'exit':
-                        await user.send("Exiting Character Creation!")
+                        await user.send(getLang("Register", "rg_19"))
                         isRegistering = False
                         currentlyRegistering.remove(user.id)
                         return
                     name = response
-                    await user.send("Your Characters name has been set.")
+                    await user.send(getLang("Register", "rg_36"))
 
                 else:
-                    await user.send(
-                        "Please upload, link or paste in your character. Web links, text files and raw text are all accepted, and will be handled appropriately.")
+                    await user.send(getLang("Register", "rg_32"))
                     response = await getdm(ctx)
-                    if response.lower() == 'exit':
-                        await user.send("Exiting Character Creation!")
+                    if response.lower() == getLang("Register", "rg_24"):
+                        await user.send(getLang("Register", "rg_19"))
                         isRegistering = False
                         currentlyRegistering.remove(user.id)
                         return
@@ -1645,7 +1593,7 @@ async def _registerChar(ctx, user):
             return
 
         else:
-            await user.send("Invalid response. Please try again.")
+            await user.send(getLang("Register", "rg_37"))
 
 
 #  EVAL COMMAND. - https://gist.github.com/nitros12/2c3c265813121492655bc95aa54da6b9
@@ -1703,8 +1651,7 @@ async def eval_fn(ctx, *, cmd):
 
 @bot.command()
 async def help(ctx):
-    await ctx.reply(
-        "For help, please check out the Wiki on Github!\nhttps://github.com/OblivionCreator/mettaton-2.py/wiki")
+    await ctx.reply(getLang("Misc", "help"))
 
 
 ## Log Handling ##
@@ -1722,15 +1669,7 @@ async def logMSG(message):
     try:
         await (await getLogChannel()).send(message)
     except Exception as e:
-        print(f"Failed to send Log! Message to log:\n{message}\nFull Exception as Follows:\n{e}")
-
-
-## Other ##
-
-@bot.command()
-async def replytest(ctx):
-    await ctx.reply("TEST REPLY")
-
+        print(getLang("Log", "lg_15").format(message, e))
 
 ## Auto Backup ##
 
@@ -1759,13 +1698,13 @@ async def runBackup():
     date = datetime.now()
     timerStart = time.perf_counter()
     try:
-        await channel.send("Starting Backup! The bot may not respond to commands.")
+        await channel.send(getLang("Backup", "bu_1"))
     except Exception as e:
-        await logMSG(f"Unable to send Backup Alert. Please ensure the GM channel is set correctly!.\n{e}")
+        await logMSG(getLang("Backup", "bu_2"))
     status = discord.Status.idle
-    await bot.change_presence(activity=discord.Game("Auto-Backup in Progress!"), status=status)
+    await bot.change_presence(activity=discord.Game(getLang("Backup", "bu_3")), status=status)
 
-    await logMSG("Closing Database Connection...")
+    await logMSG(getLang("Backup", "bu_4"))
     close_connection(database)
 
     folderName = 'Mettaton Backups'
@@ -1783,13 +1722,13 @@ async def runBackup():
             dBackup.Upload()
 
     conn = create_connection(database)
-    await logMSG("Reopening Database Connection...")
+    await logMSG(getLang("Backup", "bu_5"))
 
     timerEnd = time.perf_counter()
     try:
-        await channel.send(f"Backup Complete in {str((timerEnd - timerStart))[0:5]} seconds.")
+        await channel.send(getLang("Backup", "bu_6").format(str((timerEnd - timerStart))[0:5]))
     except Exception as e:
-        await logMSG(f"Unable to send Backup Complete Alert. Please ensure the GM channel is set correctly!.\n{e}")
+        await logMSG(getLang("Backup", "bu_7"))
 
     backupOngoing = False
     await statusChanger()
@@ -1809,7 +1748,7 @@ async def sans(ctx):
 @bot.command()
 @commands.cooldown(1, 60, commands.BucketType.guild)
 async def papyrus(ctx):
-    await ctx.reply(f"Nice Try, <@{str(ctx.author.id)}>")
+    await ctx.reply(getLang("Misc", "papyrus").format(ctx.author.mention))
 
 
 @tasks.loop(minutes=5)
@@ -1824,9 +1763,6 @@ async def statusChanger():
 
     dt = date.today()
     d1 = dt.strftime("%d")
-    if int(d1) == 31:
-        await bot.change_presence(activity=discord.Game("SHE LIVED, BITCH"))
-        return
 
     statusChoice = ['Aik has Played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role',
                     'old enough for soriel',
@@ -1841,8 +1777,6 @@ async def statusChanger():
                     'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters',
                     'Dead Parents', 'with the edge.', 'SHE LIVED, BITCH']
 
-    statusjs = json.dumps(statusChoice)
-
     await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
 
 
@@ -1853,38 +1787,36 @@ async def send(ctx, id, *, message: str):
     charData = _getCharDict(id)
     if charData == 'INVALID CHARACTER':
         try:
-            await ctx.author.send("Unable to send message! That character does not exist.")
+            await ctx.author.send(getLang("Send", "sn_1"))
         except Exception as e:
-            await logMSG(f"Failed sending message to {ctx.author} ({ctx.author.id}).\n{e}")
+            await logMSG(getLang("Send", "sn_2").format(ctx.author, ctx.author.id, e))
         await ctx.message.delete()
         return
 
     if ctx.author.id != int(charData["Owner"]):
         try:
-            await ctx.author.send("You do not own this character!")
-            await logMSG(f"{ctx.author} ({ctx.author.id}) tried sending as a character they don't own.")
+            await ctx.author.send(getLang("Send", "sn_3"))
         except Exception as e:
-            await logMSG(f"Failed sending message to {ctx.author} ({ctx.author.id}).\n{e}")
+            await logMSG(getLang("Send", "sn_2").format(ctx.author, ctx.author.id, e))
         await ctx.message.delete()
         return
 
-    if charData["Status"] != 'Approved':
+    if charData[getLang("Fields", "status")] != getLang("Status", "conv_st_1"):
         try:
-            await ctx.author.send("This character is not approved!")
-            await logMSG(f"{ctx.author} ({ctx.author.id}) tried sending as a character that is not approved.")
+            await ctx.author.send(getLang("Send", "sn_4"))
         except Exception as e:
-            await logMSG(f"Failed sending message to {ctx.author} ({ctx.author.id}).\n{e}")
+            await logMSG(getLang("Send", "sn_2").format(ctx.author, ctx.author.id, e))
         await ctx.message.delete()
         return
 
-    name = charData["Name"]
+    name = charData[getLang("Fields", "name")]
     name = name[0:80]
 
     custom_img = None
 
     portJS = json.loads(charData["misc"])
-    if "Portrait" in portJS:
-        custom_img = portJS["Portrait"]
+    if getLang("Send", "sn_5") in portJS:
+        custom_img = portJS[getLang("Send", "sn_5")]
 
     await webhook_manager.send(ctx, name, message, custom_img)
 
@@ -1892,5 +1824,4 @@ async def send(ctx, id, *, message: str):
 bot.run(token)
 close_connection(database)
 
-print(
-    "Bot Shutting Down. This message should only show if you have stopped the bot manually. If you see this message and have not shut down the bot on purpose, please raise an issue on GitHub with as much information as possible!")
+print(getLang("Misc", "shutdown"))
