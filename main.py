@@ -1417,7 +1417,7 @@ async def _registerChar(ctx, user):
 
             cfields[getLang("Fields", "name")] = response
 
-            await user.send(getLang("Register", "rg_"))
+            await user.send(getLang("Register", "rg_21"))
 
             while not charcomplete:
 
@@ -1465,7 +1465,7 @@ async def _registerChar(ctx, user):
                     except:
                         await user.send(getLang("Register", "rg_26"))
                 elif selector in cfields:
-                    await user.send(getLang("Register", "rg_").format(selector.capitalize()))
+                    await user.send(getLang("Register", "rg_27").format(selector.capitalize()))
                     response = await getdm(ctx)
 
                     if selector.lower() == getLang("Fields", "name"):
