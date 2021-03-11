@@ -836,7 +836,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                                  description=getLang("View", "v_3").format(sanID), color=color,
                                  inline=False)
 
-        noDisplay = ['charID', 'misc', getLang("Fields", "owner").capitalize()]
+        noDisplay = ['charID', 'misc', getLang("Fields", "owner")]
 
         charOwner = ctx.guild.get_member(int(charData[getLang("Fields", "owner")]))
 
