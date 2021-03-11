@@ -678,7 +678,7 @@ async def reRegister(ctx, charID):
             await alertGMs(ctx, charID, resub=True)
             registerLoop = False
             return
-        elif selector == 'exit':
+        elif selector == getLang("Register", "rg_24"):
             await user.send(getLang("Register", "rg_12"))
             return
         else:
@@ -1387,7 +1387,7 @@ async def _registerChar(ctx, user):
         resmsg = await getdm(ctx)
         resmsg = resmsg.lower()
 
-        if resmsg == 'exit':
+        if resmsg == getLang("Register", "rg_24"):
             await user.send(getLang("Register", "rg_19"))
             currentlyRegistering.remove(user.id)
             isRegistering = False
@@ -1424,7 +1424,7 @@ async def _registerChar(ctx, user):
                 # MAIN CHARACTER REGISTRATION LOOP
 
                 response = await getdm(ctx)
-                if response.lower() == 'exit':
+                if response.lower() == getLang("Register", "rg_24"):
                     await user.send(getLang("Register", "rg_19"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
@@ -1473,7 +1473,7 @@ async def _registerChar(ctx, user):
                             break
                             return
 
-                    if response.lower() == 'exit':
+                    if response.lower() == getLang("Register", "rg_24"):
                         await user.send(getLang("Register", "rg_19"))
                         isRegistering = False
                         currentlyRegistering.remove(user.id)
@@ -1529,7 +1529,7 @@ async def _registerChar(ctx, user):
 
             await user.send(getLang("Register", "rg_32"))
             prefilled = await getdm(ctx)
-            if prefilled.lower() == 'exit':
+            if prefilled.lower() == getLang("Register", "rg_24"):
                 await user.send(getLang("Register", "rg_19"))
                 isRegistering = False
                 currentlyRegistering.remove(user.id)
@@ -1542,7 +1542,7 @@ async def _registerChar(ctx, user):
                 response = await getdm(ctx)
                 selector = response.lower()
 
-                if selector == 'exit':
+                if selector == getLang("Register", "rg_24"):
                     await user.send(getLang("Register", "rg_19"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
@@ -1573,7 +1573,7 @@ async def _registerChar(ctx, user):
                     if await canonCheck(response, user):
                         return
 
-                    if response.lower() == 'exit':
+                    if response.lower() == getLang("Register", "rg_24"):
                         await user.send(getLang("Register", "rg_19"))
                         isRegistering = False
                         currentlyRegistering.remove(user.id)
