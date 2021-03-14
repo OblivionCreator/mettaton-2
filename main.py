@@ -532,7 +532,7 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
 
     if charStatus == getLang("Status", "conv_st_1"):
         charData = _getCharDict(charInt)
-        userid = charData["Owner"]
+        userid = charData["owner"]
         user = ctx.guild.get_member(int(userid))
         role = get(ctx.guild.roles, name=getLang("Misc", "rp"))
         await user.add_roles(role)
@@ -578,14 +578,14 @@ async def reRegister(ctx, charID):
 
     owner = charData[getLang("Fields", "owner")]
     status = charData[getLang("Fields", "status")]
-    cfields[getLang("Fields", "name")] = charData["Name"]
-    cfields[getLang("Fields", "age")] = charData["Age"]
-    cfields[getLang("Fields", "gender")] = charData["Gender"]
-    cfields[getLang("Fields", "abilities/tools")] = charData["Abilities/Tools"]
-    cfields[getLang("Fields", "appearance")] = charData["Appearance"]
-    cfields[getLang("Fields", "background")] = charData["Background"]
-    cfields[getLang("Fields", "personality")] = charData["Personality"]
-    cfields[getLang("Fields", "prefilled")] = charData["Prefilled Application"]
+    cfields[getLang("Fields", "name")] = charData["name"]
+    cfields[getLang("Fields", "age")] = charData["age"]
+    cfields[getLang("Fields", "gender")] = charData["gender"]
+    cfields[getLang("Fields", "abilities/tools")] = charData["abilities/tools"]
+    cfields[getLang("Fields", "appearance")] = charData["appearance"]
+    cfields[getLang("Fields", "background")] = charData["background"]
+    cfields[getLang("Fields", "personality")] = charData["personality"]
+    cfields[getLang("Fields", "prefilled")] = charData["prefilled"]
 
     embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
 
@@ -744,7 +744,7 @@ async def alertGMs(ctx, charID, resub=False):
         for name, value in charJS.items():
             charSTR = f"{charSTR}\n{name}:{value}"
 
-        filePath = charToTxt(charID=charData["charID"], owner=charData["Owner"], status=charData["Status"],
+        filePath = charToTxt(charID=charData["charID"], owner=charData["owner"], status=charData["Status"],
                              name=charData["Name"], age=charData["Age"], gender=charData["Gender"],
                              abil=charData["Abilities/Tools"],
                              appear=charData["Appearance"], backg=charData["Background"],
@@ -1036,7 +1036,7 @@ async def _custom(ctx, charID='', field='', *, message: str):
         await ctx.reply(getLang("Custom", "cs_1"))
         return
 
-    if ctx.author.id != int(charData["Owner"]):
+    if ctx.author.id != int(charData["owner"]):
         await ctx.reply(getLang("Custom", "cs_2"))
         return
 
@@ -1780,7 +1780,7 @@ async def send(ctx, id, *, message: str):
         await ctx.message.delete()
         return
 
-    if ctx.author.id != int(charData["Owner"]):
+    if ctx.author.id != int(charData["owner"]):
         try:
             await ctx.author.send(getLang("Send", "sn_3"))
         except Exception as e:
