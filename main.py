@@ -430,7 +430,7 @@ def message_check(channel=None, author=None, content=None, ignore_bot=True, lowe
 async def _setGMCChannel(ctx):
     role_names = [role.name for role in ctx.author.roles]
 
-    if not checkGM(ctx):
+    if not await checkGM(ctx):
         await ctx.reply(getLang("GMChannel", "gmc_1"))
         return
 
@@ -1762,19 +1762,8 @@ async def statusChanger():
     dt = date.today()
     d1 = dt.strftime("%d")
 
-    statusChoice = ['Aik has Played Undertale', 'Meme', 'with Bliv\'s feelings', 'with Bliv\'s Owner Role',
-                    'old enough for soriel',
-                    'haha he smope weef', 'SHUP', 'AMA', '...meme?', 'role!unban', '1000 blood', 'blame AIK',
-                    'blame Bliv', 'blame Samario', 'blame Wisty', 'Venom is a Furry', 'blankets = lewd???',
-                    'oblivion pinged everyone', 'oblivion pinged everyone... again', 'arrrr peee?', 'buzzy bee',
-                    'this server contains chemicals known to the nation of Arkias to cause cancer.',
-                    'No Thoughts. Dream Empty', 'Stuck in a Nightmare\'s Paradise', 'PUBBY',
-                    'You have OneShot at this.', 'What plant is Lotus?', 'Default Dance', 'Mystiri is All',
-                    'This server has been murder free for 0 Months', 'Pending', 'Vampire Celery', 'Bugsonas Are Real',
-                    'Arik files tax returns', 'Are you here to RP or be cringe', 'VillagerHmm',
-                    'Member Retention now at 1%', 'with Smol Bot', 'bnuuy', 'More lines than one of SJ\'s Characters',
-                    'Dead Parents', 'with the edge.', 'SHE LIVED, BITCH']
-
+    statusChoiceRaw = getLang("StatusLines", "status")
+    statusChoice = statusChoiceRaw.splitlines()
     await bot.change_presence(activity=discord.Game(random.choice(statusChoice)))
 
 
@@ -1818,8 +1807,6 @@ async def send(ctx, id, *, message: str):
 
     await webhook_manager.send(ctx, name, message, custom_img)
 
-
 bot.run(token)
 close_connection(database)
-
 print(getLang("Misc", "shutdown"))
