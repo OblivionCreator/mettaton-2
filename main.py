@@ -496,7 +496,7 @@ async def checkGM(ctx):
 async def alertUser(ctx, charID, status, reason):
     charData = _getCharDict(charID)
 
-    ownerID = charData["Owner"]
+    ownerID = charData["owner"]
     name = charData["Name"]
 
     user = ctx.guild.get_member(int(ownerID))
