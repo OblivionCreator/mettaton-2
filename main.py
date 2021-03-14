@@ -497,7 +497,7 @@ async def alertUser(ctx, charID, status, reason):
     charData = _getCharDict(charID)
 
     ownerID = charData["owner"]
-    name = charData["Name"]
+    name = charData["name"]
 
     user = ctx.guild.get_member(int(ownerID))
 
