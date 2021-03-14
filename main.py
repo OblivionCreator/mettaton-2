@@ -155,7 +155,7 @@ def doBackup():
 
 
 @commands.is_owner()
-@bot.command()
+@bot.command(name=getLang("Commands", "clearconfig"))
 async def clearconfig(ctx):
     config = configFields()
 
@@ -178,7 +178,7 @@ def getDenyList():
 
 # Returns current Deny List
 
-@bot.command()
+@bot.command(name=getLang("Commands", "up_de"))
 async def update_deny(ctx, act, term=''):
     term = term.lower()
 
@@ -321,7 +321,6 @@ token = file.read()
 def close_connection(db_file):
     conn.close()
 
-
 database = "mttchars.db"
 conn = create_connection(database)
 
@@ -427,7 +426,7 @@ def message_check(channel=None, author=None, content=None, ignore_bot=True, lowe
     return check
 
 
-@bot.command(name='setGMChannel')
+@bot.command(name=getLang("Commands", "setgm"))
 async def _setGMCChannel(ctx):
     role_names = [role.name for role in ctx.author.roles]
 
@@ -440,7 +439,7 @@ async def _setGMCChannel(ctx):
     await ctx.reply(getLang("GMChannel", "gmc_2"))
 
 
-@bot.command(name='setLogChannel')
+@bot.command(name=getLang("Commands", "setlog"))
 async def _setLogChannel(ctx):
     if not await checkGM(ctx):
         await ctx.reply(getLang("LogChannel", "lc_1"))
@@ -476,7 +475,8 @@ async def bp(ctx, charID):
     await approve(ctx, charID, reason=getLang("Status", "st_1").format(charID))
 
 
-@bot.command(aliases=['pending', 'deny', 'kill'])
+@bot.command(name=getLang("Status", "cmd_st_1"),
+             aliases=[getLang("Status", "cmd_st_0"), getLang("Status", "cmd_st_2"), getLang("Status", "cmd_st_4")])
 async def approve(ctx, charID, *, reason: str = ''):
     if reason == '' and not ctx.message.attachments:
         reason = getLang("Status", "st_2")
@@ -576,8 +576,8 @@ async def reRegister(ctx, charID):
         getLang("Fields", "prefilled"): '',
     }
 
-    owner = charData["Owner"]
-    status = charData["Status"]
+    owner = charData[getLang("Fields", "owner")]
+    status = charData[getLang("Fields", "status")]
     cfields[getLang("Fields", "name")] = charData["Name"]
     cfields[getLang("Fields", "age")] = charData["Age"]
     cfields[getLang("Fields", "gender")] = charData["Gender"]
@@ -685,7 +685,8 @@ async def reRegister(ctx, charID):
             await user.send(getLang("Register", "rg_13"))
 
 
-@bot.command(pass_context=True, aliases=['reregister', 'submit', 'resubmit'])
+@bot.command(pass_context=True, name=getLang("Commands", "reg"),
+             aliases=[getLang("Commands", "rereg"), 'submit', 'resubmit'])
 async def register(ctx, charID=''):
     if ctx.author.id in currentlyRegistering:
         await ctx.reply(getLang("Register", "rg_14"))
@@ -792,7 +793,7 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
     return path
 
 
-@bot.command(name='view', aliases=['cm', 'charmanage', 'samwhy'])
+@bot.command(name=getLang("Commands", "view"), aliases=['cm', 'charmanage'])
 async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
     '''Brings up character information for the specified character.
 
@@ -958,7 +959,7 @@ def _getCharDict(charID=0):
     return charData
 
 
-@bot.command(name='set', aliases=['setprop'])
+@bot.command(name=getLang("Commands", "set"), aliases=['setprop'])
 async def _set(ctx, charID, field, *, message: str):
 
     alertChannel = bot.get_channel(LogChannel())
@@ -1005,9 +1006,9 @@ async def _set(ctx, charID, field, *, message: str):
     _setSQL(icharID, fSan, message)
 
     if message == '':
-        await ctx.reply(getLang("Set", "s_6").format(field.capitalize))
+        await ctx.reply(getLang("Set", "s_6").format(field.capitalize()))
     else:
-        await ctx.reply(getLang("Set", "s_7").format(field.capitalize))
+        await ctx.reply(getLang("Set", "s_7").format(field.capitalize()))
 
     await alertChannel.send(getLang("Log", "lg_12").format(ctx.author, icharID, field.capitalize(), message))
 
@@ -1101,7 +1102,7 @@ async def getUserChars(ctx, userID, pageSize, pageID):
                                                        math.ceil(count / pageSize), charListStr))
 
 
-@bot.command(name='list')
+@bot.command(name=getLang("Commands", "list"))
 async def _list(ctx, pageIdentifier='', page=''):
     '''Shows a list of all characters, sorted into pages of 15 Characters.
     Mentioning a user or user ID will bring up all characters belonging to that user.
@@ -1178,7 +1179,7 @@ def convertField(selector):
     return selector
 
 
-@bot.command(name='search')
+@bot.command(name=getLang("Commands", "search"))
 async def _search(ctx, selector='', extra1='', extra2=''):
 
     if selector == '':
@@ -1236,7 +1237,7 @@ async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
         f'{getLang("Search", "sr_2").format(pageNo + 1, math.ceil(count / 25))} \n{charListStr}')
 
 
-@bot.command(name='delete')
+@bot.command(name=getLang("Commands", "delete"))
 async def _delete(ctx, charDel='', confirmation=''):
 
     if charDel.isnumeric():
@@ -1252,7 +1253,8 @@ async def _delete(ctx, charDel='', confirmation=''):
     else:
         await ctx.reply("Invalid Character ID!")
 
-@bot.command(name='undelete', aliases=['recover'])
+
+@bot.command(name=getLang("Commands", "undelete"), aliases=[getLang("Commands", "recover")])
 async def _undelete(ctx, charID):
     if not await checkGM(ctx):
         await ctx.reply(getLang("Delete", "dl_3"))
@@ -1351,7 +1353,7 @@ def previewChar(cfields=None, prefilled=None, name=None):
     return embedVar
 
 
-@bot.command()
+@bot.command(name=getLang("Commands", "invite"))
 async def invite(ctx):
     await ctx.reply(getLang("Misc", "invite"))
 
@@ -1614,13 +1616,9 @@ def insert_returns(body):
         insert_returns(body[-1].body)
 
 
-@bot.command(name='eval')
+@bot.command(name=getLang("Commands", "eval"))
 @commands.is_owner()
 async def eval_fn(ctx, *, cmd):
-    '''LOCKED TO OBLIVION ONLY. DO NOT USE.
-
-    Evalutes an expression.'''
-
     fn_name = "_eval_expr"
 
     cmd = cmd.strip("` ")
@@ -1649,7 +1647,7 @@ async def eval_fn(ctx, *, cmd):
     await ctx.reply(result)
 
 
-@bot.command()
+@bot.command(name=getLang("Commands", "help"))
 async def help(ctx):
     await ctx.reply(getLang("Misc", "help"))
 
@@ -1681,7 +1679,7 @@ async def autoBackup():
         await runBackup()
 
 
-@bot.command(name='forcebackup')
+@bot.command(name=getLang("Commands", "fbackup"))
 @commands.is_owner()
 async def _forceBackup(ctx):
     await runBackup()
@@ -1736,7 +1734,7 @@ async def runBackup():
 
 ## Fun Stuff ##
 
-@bot.command()
+@bot.command(name=getLang("Commands", "sans"))
 @commands.cooldown(1, 3600, commands.BucketType.guild)
 async def sans(ctx):
     if random.randint(0, 100) <= 10:
@@ -1745,7 +1743,7 @@ async def sans(ctx):
         await ctx.reply(open('resources/ascii_sans.txt', encoding="utf-8").read())
 
 
-@bot.command()
+@bot.command(name=getLang("Commands", "pap"))
 @commands.cooldown(1, 60, commands.BucketType.guild)
 async def papyrus(ctx):
     await ctx.reply(getLang("Misc", "papyrus").format(ctx.author.mention))
@@ -1782,7 +1780,7 @@ async def statusChanger():
 
 ## Other ##
 
-@bot.command()
+@bot.command(name=getLang("Commands", "send"))
 async def send(ctx, id, *, message: str):
     charData = _getCharDict(id)
     if charData == 'INVALID CHARACTER':
