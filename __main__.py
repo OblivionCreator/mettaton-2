@@ -22,8 +22,7 @@ from discord import HTTPException
 from discord.utils import get
 import webhook_manager
 from configparser import ConfigParser
-
-# TRANSLATION BRANCH
+from discord_slash import SlashCommand, SlashContext
 
 intents = discord.Intents.default()
 intents.members = True
@@ -86,6 +85,7 @@ def configFields():
     }
     return curConfig
 
+
 async def configLoader():
     try:
         with open('.config') as file:
@@ -135,6 +135,8 @@ bot = commands.Bot(
     command_prefix=['mtt!', 'Rp!', 'RP!', 'rP!', cst_prefix],
     intents=intents, case_insensitive=True)
 bot.remove_command("help")
+guild_ids = [770428394918641694]
+slash = SlashCommand(bot, sync_commands=True)
 currentlyRegistering = []
 
 
@@ -146,7 +148,6 @@ def GMChannel():
 def LogChannel():
     conf = getConfig()
     return int(conf["logchannel"])
-
 
 
 def doBackup():
@@ -167,14 +168,16 @@ async def clearconfig(ctx):
 
     file.write(cfgJson)
 
-    await ctx.reply(getLang("ClearConfig", "cc_1"))
+    await ctx.send(getLang("ClearConfig", "cc_1"))
     return
+
 
 # Deny List Handling
 
 def getDenyList():
     conf = getConfig()
     return conf["denylist"]
+
 
 # Returns current Deny List
 
@@ -183,37 +186,37 @@ async def update_deny(ctx, act, term=''):
     term = term.lower()
 
     if not await checkGM(ctx):
-        await ctx.reply(getLang("DenyList", "dl_1"))
+        await ctx.send(getLang("DenyList", "dl_1"))
         return
 
     if act.lower() == 'list':
-        await ctx.reply(f"{getLang('DenyList', 'dl_2')}\n{listDeny()}")
+        await ctx.send(f"{getLang('DenyList', 'dl_2')}\n{listDeny()}")
         return
 
     if act == 'add':
 
         if term == '':
-            await ctx.reply(getLang("DenyList", "dl_3"))
+            await ctx.send(getLang("DenyList", "dl_3"))
 
         addSt = addDeny(term)
         if addSt == False:
-            await ctx.reply(getLang("DenyList", "dl_4"))
+            await ctx.send(getLang("DenyList", "dl_4"))
             return
-        await ctx.reply(getLang("DenyList", "dl_5").format(term))
+        await ctx.send(getLang("DenyList", "dl_5").format(term))
         return
 
     if act.lower() == 'remove':
 
         if term == '':
-            await ctx.reply(getLang("DenyList", "dl_3"))
+            await ctx.send(getLang("DenyList", "dl_3"))
 
         if delDeny(term) == False:
-            await ctx.reply(getLang("DenyList", "dl_6"))
+            await ctx.send(getLang("DenyList", "dl_6"))
             return
-        await ctx.reply(getLang("DenyList", "dl_7").format(term))
+        await ctx.send(getLang("DenyList", "dl_7").format(term))
         return
 
-    await ctx.reply(getLang("DenyList", "dl_8"))
+    await ctx.send(getLang("DenyList", "dl_8"))
 
 
 def listDeny():
@@ -307,6 +310,7 @@ def create_connection(db_file):
 
     return conn
 
+
 def clearLog():  # Deletes all files in charoverflow.
     files = glob.glob('charoverflow/*')
     for f in files:
@@ -320,6 +324,7 @@ token = file.read()
 
 def close_connection(db_file):
     conn.close()
+
 
 database = "mttchars.db"
 conn = create_connection(database)
@@ -348,7 +353,7 @@ async def block_help(ctx):
     if await checkGM(ctx):
         return True
     if ctx.channel.name == 'help':
-        await ctx.reply(getLang("Misc", "helpBlock"))
+        await ctx.send(getLang("Misc", "helpBlock"))
         return False
     else:
         return True
@@ -431,22 +436,22 @@ async def _setGMCChannel(ctx):
     role_names = [role.name for role in ctx.author.roles]
 
     if not await checkGM(ctx):
-        await ctx.reply(getLang("GMChannel", "gmc_1"))
+        await ctx.send(getLang("GMChannel", "gmc_1"))
         return
 
     updateConfig('gmchannel', ctx.channel.id)
 
-    await ctx.reply(getLang("GMChannel", "gmc_2"))
+    await ctx.send(getLang("GMChannel", "gmc_2"))
 
 
 @bot.command(name=getLang("Commands", "setlog"))
 async def _setLogChannel(ctx):
     if not await checkGM(ctx):
-        await ctx.reply(getLang("LogChannel", "lc_1"))
+        await ctx.send(getLang("LogChannel", "lc_1"))
         return
 
     updateConfig('logchannel', ctx.channel.id)
-    await ctx.reply(getLang("LogChannel", "lc_2"))
+    await ctx.send(getLang("LogChannel", "lc_2"))
 
 
 def updateConfig(field, value):
@@ -481,9 +486,10 @@ async def approve(ctx, charID, *, reason: str = ''):
     if reason == '' and not ctx.message.attachments:
         reason = getLang("Status", "st_2")
     if len(reason) > 1750:
-        await ctx.reply(getLang("Status", "st_3"))
+        await ctx.send(getLang("Status", "st_3"))
         return
     await _changeStatus(ctx, charID=charID, charStatus=statuses[ctx.invoked_with], reason=reason)
+
 
 async def checkGM(ctx):
     role_names = [role.name for role in ctx.author.roles]
@@ -502,24 +508,24 @@ async def alertUser(ctx, charID, status, reason):
     user = ctx.guild.get_member(int(ownerID))
 
     if user == None:
-        await ctx.reply(getLang("Status", "st_4"))
+        await ctx.send(getLang("Status", "st_4"))
         return
 
     try:
         await user.send(getLang("Status", "st_5").format(charID, name[0:100], status, ctx.author.mention, reason))
     except Exception:
-        await ctx.reply(getLang("Status", "st_6").format(charID))
+        await ctx.send(getLang("Status", "st_6").format(charID))
 
 
 async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
     if not await checkGM(ctx):
-        await ctx.reply(getLang("Status", "st_7"))
+        await ctx.send(getLang("Status", "st_7"))
         return
 
     if charID.isnumeric():
         charInt = int(charID)
     else:
-        await ctx.reply(getLang("Status", "st_8"))
+        await ctx.send(getLang("Status", "st_8"))
         return
 
     if ctx.message.attachments:
@@ -538,7 +544,7 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
         await user.add_roles(role)
 
     await alertUser(ctx, charInt, charStatus, reason)
-    await ctx.reply(getLang("Status", "st_9").format(charID, charStatus))
+    await ctx.send(getLang("Status", "st_9").format(charID, charStatus))
     logChannel = bot.get_channel(LogChannel())
     await logChannel.send(getLang("Status", "st_10").format(ctx.author, charInt, charStatus, reason))
 
@@ -550,20 +556,20 @@ async def reRegister(ctx, charID):
     owner = cursor.fetchone()
 
     if owner is None:
-        await ctx.reply(getLang("Register", "rg_1"))
+        await ctx.send(getLang("Register", "rg_1"))
         return
     else:
         ownerP = owner[0]
 
     if int(ownerP) != ctx.author.id:
         await logMSG(getLang("Log", "lg_9").format(ctx.author.id, ownerP))
-        await ctx.reply(getLang("Register", "rg_2"))
+        await ctx.send(getLang("Register", "rg_2"))
         return
 
     charData = _getCharDict(int(charID))
 
     if charData == 'INVALID CHARACTER':
-        ctx.reply(getLang("Register", "rg_1"))
+        ctx.send(getLang("Register", "rg_1"))
 
     cfields = {
         getLang("Fields", "name"): '',
@@ -592,25 +598,27 @@ async def reRegister(ctx, charID):
     try:
         await ctx.author.send(getLang("Register", "rg_3"), embed=embedV)
     except:
-        filePath = charToTxt(charID=charID, owner=owner, status=status, name=cfields[getLang("Fields", "name")],
-                             age=cfields[getLang("Fields", "age")],
-                             gender=cfields[getLang("Fields", "gender")],
-                             abil=cfields[getLang("Fields", "abilities/tools")],
-                             appear=cfields[getLang("Fields", "appearance")],
-                             backg=cfields[getLang("Fields", "background")],
-                             person=cfields[getLang("Fields", "personality")],
-                             prefilled=cfields[getLang("Fields", "prefilled")], ctx=ctx)
+        filePath = charToTxt(charID=charData["charID"],
+                             owner=charData[getLang("Fields", "owner")],
+                             status=charData[getLang("Fields", "status")],
+                             name=charData[getLang("Fields", "name")], age=charData[getLang("Fields", "age")],
+                             gender=charData[getLang("Fields", "gender")],
+                             abil=charData[getLang("Fields", "abilities/tools")],
+                             appear=charData[getLang("Fields", "appearance")],
+                             backg=charData[getLang("Fields", "background")],
+                             person=charData[getLang("Fields", "personality")],
+                             prefilled=charData[getLang("Fields", "prefilled")], ctx=ctx)
         charFile = open(filePath, 'r')
 
         try:
             await ctx.author.send(getLang("Register", "rg_3"), file=discord.File(filePath))
         except:
-            await ctx.reply(getLang("Register", "rg_4"))
+            await ctx.send(getLang("Register", "rg_4"))
             return
         charFile.close()
         clearLog()
 
-    await ctx.reply(getLang("Register", "rg_5"))
+    await ctx.send(getLang("Register", "rg_5"))
 
     user = ctx.author
     registerLoop = True
@@ -689,7 +697,7 @@ async def reRegister(ctx, charID):
              aliases=[getLang("Commands", "rereg"), 'submit', 'resubmit'])
 async def register(ctx, charID=''):
     if ctx.author.id in currentlyRegistering:
-        await ctx.reply(getLang("Register", "rg_14"))
+        await ctx.send(getLang("Register", "rg_14"))
         return
 
     currentlyRegistering.append(ctx.author.id)
@@ -700,14 +708,14 @@ async def register(ctx, charID=''):
             ctx.author.id)  # Fixed Bug with sending 'Please check your DMs!' as well as 'You do not own this character!' - Thanks @Venom134
         return
 
-    await ctx.reply(getLang("Register", "rg_5"))
+    await ctx.send(getLang("Register", "rg_5"))
 
     await logMSG(getLang("Log", "lg_10").format(ctx.author))
     user = ctx.author
     try:
         await user.send(getLang("Register", "rg_15"))
     except:
-        await ctx.reply(getLang("Register", "rg_4"))
+        await ctx.send(getLang("Register", "rg_4"))
         currentlyRegistering.remove(user.id)
         return
     await _registerChar(ctx, user)
@@ -744,17 +752,21 @@ async def alertGMs(ctx, charID, resub=False):
         for name, value in charJS.items():
             charSTR = f"{charSTR}\n{name}:{value}"
 
-        filePath = charToTxt(charID=charData["charID"], owner=charData["owner"], status=charData["Status"],
-                             name=charData["Name"], age=charData["Age"], gender=charData["Gender"],
-                             abil=charData["Abilities/Tools"],
-                             appear=charData["Appearance"], backg=charData["Background"],
-                             person=charData["Personality"], prefilled=charData["Prefilled Application"],
+        filePath = charToTxt(charID=charData["charID"], owner=charData[getLang("Fields", "owner")],
+                             status=charData[getLang("Fields", "status")],
+                             name=charData[getLang("Fields", "name")], age=charData[getLang("Fields", "age")],
+                             gender=charData[getLang("Fields", "gender")],
+                             abil=charData[getLang("Fields", "abilities/tools")],
+                             appear=charData[getLang("Fields", "appearance")],
+                             backg=charData[getLang("Fields", "background")],
+                             person=charData[getLang("Fields", "personality")],
+                             prefilled=charData[getLang("Fields", "prefilled")],
                              misc=charSTR, ctx=ctx)
 
         charFile = open(filePath, 'r')
 
         await channel.send(getLang("Register", "rg_18").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
-                           embed=embedC, file=discord.File(filePath))
+                           file=discord.File(filePath))
     except Exception as e:
         await logHandler(getLang("Log", "lg_11"))
 
@@ -819,7 +831,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
         charData = _getCharDict(sanID)
 
         if charData == 'INVALID CHARACTER':
-            await ctx.reply(getLang("View", "v_1"))
+            await ctx.send(getLang("View", "v_1"))
             return
 
         color = 0x000000
@@ -869,12 +881,12 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
 
         try:
             if dmchannel is False:
-                await ctx.reply(embed=embedVar)
+                await ctx.send(embed=embedVar)
             else:
                 await ctx.author.send(embed=embedVar)
         except:
             if dmchannel is False:
-                await ctx.reply(getLang("View", "v_4"))
+                await ctx.send(getLang("View", "v_4"))
             else:
                 ctx.author.send(getLang("View", "v_4"))
             filePath = charToTxt(charID=charData["charID"], owner=charData[getLang("Fields", "owner")],
@@ -890,7 +902,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
 
             charFile = open(filePath, 'r')
             if dmchannel is False:
-                await ctx.reply(file=discord.File(filePath))
+                await ctx.send(file=discord.File(filePath))
             else:
                 ctx.author.send(file=discord.File(filePath))
             charFile.close()
@@ -961,14 +973,13 @@ def _getCharDict(charID=0):
 
 @bot.command(name=getLang("Commands", "set"), aliases=['setprop'])
 async def _set(ctx, charID, field, *, message: str):
-
     alertChannel = bot.get_channel(LogChannel())
 
     if field.lower() in fields:
         fSan = convertField(field.lower())
 
         if fSan == 'charID':
-            await ctx.reply(getLang("Set", "s_1"))
+            await ctx.send(getLang("Set", "s_1"))
             return
     else:
         await _custom(ctx, charID=charID, field=field, message=message)
@@ -977,38 +988,38 @@ async def _set(ctx, charID, field, *, message: str):
     if message == '' or message == getLang("Set", "s_2"):
         message = ''
         if fSan == getLang("Fields", "name"):
-            await ctx.reply(getLang("Set", "s_3"))
+            await ctx.send(getLang("Set", "s_3"))
             return
         elif fSan == 'misc':
             message = '{}'
 
     if fSan == 'owner' or fSan == 'status':
         if await checkGM(ctx) is False:
-            await ctx.reply(getLang("Set", "s_4"))
+            await ctx.send(getLang("Set", "s_4"))
             return
 
     if charID.isnumeric():
         icharID = int(charID)
     else:
-        await ctx.reply(getLang("View", "v_1"))
+        await ctx.send(getLang("View", "v_1"))
         return
 
     ownerID = _charExists(icharID)
 
     if ownerID == False:
-        await ctx.reply(getLang("View", "v_1"))
+        await ctx.send(getLang("View", "v_1"))
         return
 
     if not charPermissionCheck(ctx, ownerID):
-        await ctx.reply(getLang("Set", "s_5"))
+        await ctx.send(getLang("Set", "s_5"))
         return
 
     _setSQL(icharID, fSan, message)
 
     if message == '':
-        await ctx.reply(getLang("Set", "s_6").format(field.capitalize()))
+        await ctx.send(getLang("Set", "s_6").format(field.capitalize()))
     else:
-        await ctx.reply(getLang("Set", "s_7").format(field.capitalize()))
+        await ctx.send(getLang("Set", "s_7").format(field.capitalize()))
 
     await alertChannel.send(getLang("Log", "lg_12").format(ctx.author, icharID, field.capitalize(), message))
 
@@ -1027,17 +1038,17 @@ async def _custom(ctx, charID='', field='', *, message: str):
     if charID.isnumeric():
         icharID = int(charID)
     else:
-        await ctx.reply(getLang("Custom", "cs_1"))
+        await ctx.send(getLang("Custom", "cs_1"))
         return
 
     charData = _getCharDict(icharID)
 
     if charData == 'INVALID CHARACTER':
-        await ctx.reply(getLang("Custom", "cs_1"))
+        await ctx.send(getLang("Custom", "cs_1"))
         return
 
     if ctx.author.id != int(charData["owner"]):
-        await ctx.reply(getLang("Custom", "cs_2"))
+        await ctx.send(getLang("Custom", "cs_2"))
         return
 
     customFields = json.loads(charData["misc"])
@@ -1048,24 +1059,24 @@ async def _custom(ctx, charID='', field='', *, message: str):
             customFields.pop(field)
             fieldDel = True
         except:
-            await ctx.reply(getLang("Custom", "cs_3"))
+            await ctx.send(getLang("Custom", "cs_3"))
             return
     else:
         customFields[field] = message
     miscData = json.dumps(customFields)
     _setSQL(icharID, "misc", miscData)
     if fieldDel == False:
-        await ctx.reply(getLang("Custom", "cs_4").format(field))
+        await ctx.send(getLang("Custom", "cs_4").format(field))
         await alertChannel.send(getLang("Custom", "lg_12").format(ctx.author, icharID, field.capitalize(), message))
         return
 
-    await ctx.reply(getLang("Custom", "cs_5").format(field))
+    await ctx.send(getLang("Custom", "cs_5").format(field))
 
     await alertChannel.send(getLang("Log", "lg_13").format(ctx.author, icharID, field.capitalize()))
 
 
 async def _custom_error(ctx, args):
-    await ctx.reply(getLang("Custom", "cs_6"))
+    await ctx.send(getLang("Custom", "cs_6"))
 
 
 @dataclass
@@ -1095,11 +1106,11 @@ async def getUserChars(ctx, userID, pageSize, pageID):
         charListStr = getLang("GetChars", "gc_3").format(charListStr, i.id, i.name[0:75], member or i.owner) + '\n'
 
     if len(charList) == 0:
-        await ctx.reply(getLang("GetChars", "gc_1"))
+        await ctx.send(getLang("GetChars", "gc_1"))
         return
 
-    await ctx.reply(getLang("GetChars", "gc_2").format((member or userID + getLang("Fields", "left")), (pageNo + 1),
-                                                       math.ceil(count / pageSize), charListStr))
+    await ctx.send(getLang("GetChars", "gc_2").format((member or userID + getLang("Fields", "left")), (pageNo + 1),
+                                                      math.ceil(count / pageSize), charListStr))
 
 
 @bot.command(name=getLang("Commands", "list"))
@@ -1150,7 +1161,7 @@ async def _list(ctx, pageIdentifier='', page=''):
         member = ctx.message.guild.get_member(int(i.owner))
         charListStr = getLang("List", "ls_2").format(charListStr, i.id, i.name[0:75], member or i.owner) + "\n"
 
-    await ctx.reply(getLang("List", "ls_").format(pageNo + 1, math.ceil(count / pageSize), charListStr))
+    await ctx.send(getLang("List", "ls_").format(pageNo + 1, math.ceil(count / pageSize), charListStr))
 
 
 fields = [getLang("Fields", 'owner'), 'ownerid', getLang("Fields", 'status'), getLang("Fields", 'name'), 'charid', 'id',
@@ -1181,9 +1192,8 @@ def convertField(selector):
 
 @bot.command(name=getLang("Commands", "search"))
 async def _search(ctx, selector='', extra1='', extra2=''):
-
     if selector == '':
-        await ctx.reply(getLang("Search", "sr_1"))
+        await ctx.send(getLang("Search", "sr_1"))
         return
 
     if (ctx.message.mentions):
@@ -1233,31 +1243,30 @@ async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
         member = ctx.message.guild.get_member(int(i.owner))
         charListStr = getLang("GetChars", "gc_3").format(charListStr, i.id, i.name[0:75], member or i.owner) + '\n'
 
-    await ctx.reply(
+    await ctx.send(
         f'{getLang("Search", "sr_2").format(pageNo + 1, math.ceil(count / 25))} \n{charListStr}')
 
 
 @bot.command(name=getLang("Commands", "delete"))
 async def _delete(ctx, charDel='', confirmation=''):
-
     if charDel.isnumeric():
         if confirmation.lower() == getLang("Delete", "dl_1"):
             await _deleteChar(ctx, int(charDel))
             return
         else:
-            await ctx.reply(getLang("Delete", "dl_2"))
+            await ctx.send(getLang("Delete", "dl_2"))
             response = await bot.wait_for("message", check=message_check())
             if response.content.lower() == getLang("Delete", "dl_1"):
                 await _deleteChar(ctx, int(charDel))
                 return
     else:
-        await ctx.reply("Invalid Character ID!")
+        await ctx.send("Invalid Character ID!")
 
 
 @bot.command(name=getLang("Commands", "undelete"), aliases=[getLang("Commands", "recover")])
 async def _undelete(ctx, charID):
     if not await checkGM(ctx):
-        await ctx.reply(getLang("Delete", "dl_3"))
+        await ctx.send(getLang("Delete", "dl_3"))
         return
 
     if charID.isnumeric():
@@ -1267,7 +1276,7 @@ async def _undelete(ctx, charID):
 
     cursor.execute("UPDATE charlist SET status = 'Pending' WHERE charID is ?", [icharID])
     conn.commit()
-    await ctx.reply(getLang("Delete", "dl_").format(icharID))
+    await ctx.send(getLang("Delete", "dl_").format(icharID))
 
 
 def charPermissionCheck(ctx, ownerID):
@@ -1298,7 +1307,7 @@ async def _deleteChar(ctx, charID):
     ownerP = _charExists(charID)
 
     if ownerP is False:
-        await ctx.reply(getLang("Delete", "dl_5"))
+        await ctx.send(getLang("Delete", "dl_5"))
         return
 
     cursor = conn.cursor()
@@ -1306,9 +1315,9 @@ async def _deleteChar(ctx, charID):
     if charPermissionCheck(ctx, ownerID=ownerP) is True:
         cursor.execute(f"UPDATE charlist SET status = 'Disabled' WHERE charID is ?", [charID])
         conn.commit()
-        await ctx.reply(f"Character {charID} has been deleted.")
+        await ctx.send(f"Character {charID} has been deleted.")
     else:
-        await ctx.reply(getLang("Delete", "dl_6"))
+        await ctx.send(getLang("Delete", "dl_6"))
 
 
 async def getdm(ctx):
@@ -1355,7 +1364,7 @@ def previewChar(cfields=None, prefilled=None, name=None):
 
 @bot.command(name=getLang("Commands", "invite"))
 async def invite(ctx):
-    await ctx.reply(getLang("Misc", "invite"))
+    await ctx.send(getLang("Misc", "invite"))
 
 
 async def canonCheck(response, user):
@@ -1644,13 +1653,16 @@ async def eval_fn(ctx, *, cmd):
     exec(compile(parsed, filename="<ast>", mode="exec"), env)
 
     result = (await eval(f"{fn_name}()", env))
-    await ctx.reply(result)
+    await ctx.send(result)
 
+
+@slash.slash(name=getLang("Commands", "help"), description=getLang("Misc", "help_2"), guild_ids=guild_ids)
+async def _help(ctx: SlashContext):
+    await help(ctx)
 
 @bot.command(name=getLang("Commands", "help"))
 async def help(ctx):
-    await ctx.reply(getLang("Misc", "help"))
-
+    await ctx.send(getLang("Misc", "help"))
 
 ## Log Handling ##
 
@@ -1668,6 +1680,7 @@ async def logMSG(message):
         await (await getLogChannel()).send(message)
     except Exception as e:
         print(getLang("Log", "lg_15").format(message, e))
+
 
 ## Auto Backup ##
 
@@ -1738,15 +1751,15 @@ async def runBackup():
 @commands.cooldown(1, 3600, commands.BucketType.guild)
 async def sans(ctx):
     if random.randint(0, 100) <= 10:
-        await ctx.reply(open('resources/ascii_papyrus.txt', encoding="utf-8").read())
+        await ctx.send(open('resources/ascii_papyrus.txt', encoding="utf-8").read())
     else:
-        await ctx.reply(open('resources/ascii_sans.txt', encoding="utf-8").read())
+        await ctx.send(open('resources/ascii_sans.txt', encoding="utf-8").read())
 
 
 @bot.command(name=getLang("Commands", "pap"))
 @commands.cooldown(1, 60, commands.BucketType.guild)
 async def papyrus(ctx):
-    await ctx.reply(getLang("Misc", "papyrus").format(ctx.author.mention))
+    await ctx.send(getLang("Misc", "papyrus").format(ctx.author.mention))
 
 
 @tasks.loop(minutes=5)
@@ -1806,6 +1819,7 @@ async def send(ctx, id, *, message: str):
         custom_img = portJS[getLang("Send", "sn_5")]
 
     await webhook_manager.send(ctx, name, message, custom_img)
+
 
 bot.run(token)
 close_connection(database)
