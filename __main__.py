@@ -22,7 +22,6 @@ from discord import HTTPException
 from discord.utils import get
 import webhook_manager
 from configparser import ConfigParser
-from discord_slash import SlashCommand, SlashContext
 
 intents = discord.Intents.default()
 intents.members = True
