@@ -1,10 +1,8 @@
-import asyncio
 import glob
 import math
 import os
 import random
 from pathlib import Path
-
 from discord.ext import tasks
 from datetime import datetime
 import discord
@@ -135,7 +133,6 @@ bot = commands.Bot(
     intents=intents, case_insensitive=True)
 bot.remove_command("help")
 guild_ids = [770428394918641694]
-slash = SlashCommand(bot, sync_commands=True)
 currentlyRegistering = []
 
 
@@ -1653,11 +1650,6 @@ async def eval_fn(ctx, *, cmd):
 
     result = (await eval(f"{fn_name}()", env))
     await ctx.send(result)
-
-
-@slash.slash(name=getLang("Commands", "help"), description=getLang("Misc", "help_2"), guild_ids=guild_ids)
-async def _help(ctx: SlashContext):
-    await help(ctx)
 
 @bot.command(name=getLang("Commands", "help"))
 async def help(ctx):
