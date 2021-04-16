@@ -20,6 +20,7 @@ from discord import HTTPException
 from discord.utils import get
 import webhook_manager
 from configparser import ConfigParser
+from resources import getdiff
 
 intents = discord.Intents.default()
 intents.members = True
@@ -671,6 +672,7 @@ async def reRegister(ctx, charID):
         elif selector == 'done':
 
             await user.send(getLang("Register", "rg_11").format(charID))
+            oldchr = _getCharDict(charID=charID)
             resub = await charadd(owner=owner, name=cfields[getLang("Fields", "name")],
                                   age=cfields[getLang("Fields", "age")],
                                   gender=cfields[getLang("Fields", "gender")],
@@ -679,7 +681,7 @@ async def reRegister(ctx, charID):
                                   backg=cfields[getLang("Fields", "background")],
                                   person=cfields[getLang("Fields", "personality")],
                                   prefilled=cfields[getLang("Fields", "prefilled")], charID=charID)
-            await alertGMs(ctx, charID, resub=True)
+            await alertGMs(ctx, charID, resub=True, old=oldchr)
             registerLoop = False
             return
         elif selector == getLang("Register", "rg_24"):
@@ -717,8 +719,14 @@ async def register(ctx, charID=''):
     await _registerChar(ctx, user)
 
 
-async def alertGMs(ctx, charID, resub=False):
+async def alertGMs(ctx, charID, resub=False, old=None):
     embedC = await _view(ctx, idinput=str(charID), returnEmbed=True)
+
+    ping = True
+
+    if old:
+        if old[getLang("Fields", "status")] == getLang("Status", "conv_st_0"):
+            ping = False
 
     embedC.set_footer(text=getLang("Register", "rg_16").format(charID))
 
@@ -729,15 +737,31 @@ async def alertGMs(ctx, charID, resub=False):
     isResubmit = ''
 
     if resub is True:
-        isResubmit = getLang("Register", "rg_17").format(charID)
+        isResubmit = f'\n{getLang("Register", "rg_17").format(charID)}'
+
+        new = _getCharDict(charID)
+        newStr = ''
+        oldStr = ''
+        for o in old:
+            oldStr = f"{oldStr}\n{o}: {old[o]}"
+        for n in new:
+            newStr = f"{newStr}\n{n}: {new[n]}"
+        differences = getdiff.getDiffCheck(oldStr, newStr)
+        isResubmit = f"{isResubmit}\n{getLang('Register', 'rg_38')} {differences})\n"
+
     else:
         isResubmit = ''
 
     GMRole = discord.utils.get(ctx.guild.roles, name=getLang("Misc", "gm"))
 
     try:
-        await channel.send(getLang("Register", "rg_18").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
-                           embed=embedC)
+        if ping:
+            await channel.send(getLang("Register", "rg_18").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
+                               embed=embedC)
+        else:
+            await channel.send(getLang("Register", "rg_18_1").format(isResubmit, ctx.author, ctx.author.id),
+                               embed=embedC)
+
     except HTTPException as e:
 
         charData = _getCharDict(charID)
@@ -761,8 +785,12 @@ async def alertGMs(ctx, charID, resub=False):
 
         charFile = open(filePath, 'r')
 
-        await channel.send(getLang("Register", "rg_18").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
-                           file=discord.File(filePath))
+        if ping:
+            await channel.send(getLang("Register", "rg_18").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
+                               file=discord.File(filePath))
+        else:
+            await channel.send(getLang("Register", "rg_18_1").format(isResubmit, ctx.author, ctx.author.id),
+                               file=discord.File(filePath))
     except Exception as e:
         await logHandler(getLang("Log", "lg_11"))
 
@@ -780,7 +808,7 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
     charFile = open(path, 'x')
 
     charTXT = (f"Character Information for Character ID {charID}\n"
-               f"Owner: {getMember(owner, ctx) or owner + getLang('Fields', 'left').capitalize()}"
+               f"Owner: {getMember(owner, ctx) or owner + getLang('Fields', 'left').capitalize()}\n"
                f"{getLang('Fields', 'status').capitalize()}: {status}\n\n"
                f"{getLang('Fields', 'name').capitalize()}: {name}\n\n")
     if age != '': charTXT = charTXT + f"{getLang('Fields', 'age').capitalize()}: {age}\n\n"
