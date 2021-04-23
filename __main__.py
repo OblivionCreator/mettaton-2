@@ -79,7 +79,8 @@ def configFields():
         'logchannel': 0,
         'autobackup': 0,
         'language': 'translation/lang_en.ini',
-        'denylist': []
+        'denylist': [],
+        'allowprefilled': True
     }
     return curConfig
 
@@ -90,6 +91,10 @@ async def configLoader():
             print("Loading Config...")
 
             conf = getConfig()
+            confTemplate = configFields()
+
+            for i in conf:
+                confTemplate[i] = conf[i]
 
             gmchannel = bot.get_channel(GMChannel())
             logchannel = bot.get_channel(LogChannel())
@@ -110,7 +115,9 @@ async def configLoader():
                     await gmc.send(getLang("Log", "lg_4"))
                 else:
                     print(getLang("Log", "lg_4"))
-
+        file = open('.config', "w")
+        file.write(json.dumps(confTemplate))
+        file.close()
 
     except (FileNotFoundError, IOError):
 
@@ -150,6 +157,12 @@ def LogChannel():
 def doBackup():
     conf = getConfig()
     return int(conf["autobackup"])
+
+
+def allowPrefilled():
+    conf = getConfig()
+    print(bool(conf["allowprefilled"]))
+    return bool(conf["allowprefilled"])
 
 
 @commands.is_owner()
@@ -711,7 +724,11 @@ async def register(ctx, charID=''):
     await logMSG(getLang("Log", "lg_10").format(ctx.author))
     user = ctx.author
     try:
-        await user.send(getLang("Register", "rg_15"))
+        sendStr = f'{getLang("Register", "rg_15")}\n'
+        if allowPrefilled():
+            sendStr = f'{sendStr}{getLang("Register", "rg_15_1")}\n'
+        sendStr = f'{sendStr}{getLang("Register", "rg_15_2")}'
+        await user.send(sendStr)
     except:
         await ctx.send(getLang("Register", "rg_4"))
         currentlyRegistering.remove(user.id)
@@ -948,7 +965,6 @@ def _getChar(charID=0):  # Deprecated as of Version 2.1 - Use _getCharDict inste
     charInfo = cursor.fetchone()
 
     checkStatus, = charInfo[2:3]
-    print(checkStatus)
 
     if checkStatus == 'Disabled':
         return charInvalid
@@ -1408,13 +1424,6 @@ async def canonCheck(response, user):
 
 
 async def _registerChar(ctx, user):
-    '''USAGE:
-    rp!register
-    rp!register <ID> | reregister <ID>
-
-    Registers a new character, or resubmits an existing character if an ID is input.
-
-    Guides you through the command. Pleas_alere see #rules and #policy for more help.'''
 
     isRegistering = True
 
@@ -1427,7 +1436,7 @@ async def _registerChar(ctx, user):
             currentlyRegistering.remove(user.id)
             isRegistering = False
             return
-        elif resmsg == 'next':
+        elif resmsg == getLang("Register", "rg_39"):
 
             charcomplete = False
             submitChar = False
@@ -1544,7 +1553,7 @@ async def _registerChar(ctx, user):
                     await user.send(getLang("Register", "rg_30"))
 
             return
-        elif resmsg == getLang("Fields", "prefilled"):
+        elif resmsg == getLang("Fields", "prefilled") and allowPrefilled():
 
             charcomplete = False
 
