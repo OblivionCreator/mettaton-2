@@ -647,6 +647,10 @@ async def reRegister(ctx, charID):
             else:
                 fullList.append(i)
 
+        if not allowPrefilled():
+            if getLang("Fields", "prefilled") in blankList:
+                blankList.remove(getLang("Fields", "prefilled"))
+
         for i in blankList:
             blankFields = f"{blankFields} `{i.capitalize()}`,"
 
@@ -663,7 +667,9 @@ async def reRegister(ctx, charID):
         field = await getdm(ctx)
         selector = field.lower()
 
-        if selector in cfields:
+        if selector == getLang("Fields", "prefilled") and selector not in fullList and not allowPrefilled():
+            await user.send(getLang("Register", "rg_13"))
+        elif selector in cfields:
             await user.send(getLang("Register", "rg_8").format(selector.capitalize()))
             cfields[selector] = await getdm(ctx)
             await user.send(getLang("Register", "rg_9").format(selector.capitalize()))
@@ -1199,9 +1205,9 @@ async def _list(ctx, pageIdentifier='', page=''):
 
     for i in charList:
         member = ctx.message.guild.get_member(int(i.owner))
-        charListStr = getLang("List", "ls_2").format(charListStr, i.id, i.name[0:75], member or i.owner) + "\n"
-
-    await ctx.send(getLang("List", "ls_").format(pageNo + 1, math.ceil(count / pageSize), charListStr))
+        charListStr = getLang("List", "ls_2").format(charListStr, i.id, i.name[0:75], member or i.owner) + '\n'
+    print(charListStr)
+    await ctx.send(getLang("List", "ls_1").format(pageNo + 1, math.ceil(count / pageSize), charListStr))
 
 
 fields = [getLang("Fields", 'owner'), 'ownerid', getLang("Fields", 'status'), getLang("Fields", 'name'), 'charid', 'id',
