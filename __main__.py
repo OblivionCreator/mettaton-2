@@ -18,9 +18,8 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from discord import HTTPException
 from discord.utils import get
-import webhook_manager
 from configparser import ConfigParser
-from resources import getdiff
+from resources import getdiff, webhook_manager
 
 intents = discord.Intents.default()
 intents.members = True
@@ -276,13 +275,11 @@ def delDeny(term):
 
     return True
 
-
 @bot.event
 async def on_ready():
     await configLoader()
     changeStatus.start()
     autoBackup.start()
-
 
 def create_connection(db_file):
     conn = None
