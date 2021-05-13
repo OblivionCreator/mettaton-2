@@ -1776,21 +1776,7 @@ async def runBackup():
     await statusChanger()
 
 
-## Fun Stuff ##
-
-@bot.command(name=getLang("Commands", "sans"))
-@commands.cooldown(1, 3600, commands.BucketType.guild)
-async def sans(ctx):
-    if random.randint(0, 100) <= 10:
-        await ctx.send(open('resources/ascii_papyrus.txt', encoding="utf-8").read())
-    else:
-        await ctx.send(open('resources/ascii_sans.txt', encoding="utf-8").read())
-
-
-@bot.command(name=getLang("Commands", "pap"))
-@commands.cooldown(1, 60, commands.BucketType.guild)
-async def papyrus(ctx):
-    await ctx.send(getLang("Misc", "papyrus").format(ctx.author.mention))
+# rip rp!sans
 
 
 @tasks.loop(minutes=5)
