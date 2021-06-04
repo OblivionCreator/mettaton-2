@@ -20,6 +20,7 @@ from discord import HTTPException
 from discord.utils import get
 from configparser import ConfigParser
 from resources import getdiff, webhook_manager
+import validators
 
 intents = discord.Intents.default()
 intents.members = True
@@ -915,8 +916,14 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 customFields = json.loads(charData["misc"])
                 miscData = ''
                 for name, value in customFields.items():
-                    embedVar.add_field(name=name, value=value, inline=False)
-                    miscData = f"{miscData}\n{name}: {value}"
+                    print(name, value)
+                    valid = validators.url(value)
+                    if name.lower() == 'portrait' and valid == True:
+                        embedVar.set_image(url=value)
+                    else:
+                        print(valid)
+                        embedVar.add_field(name=name, value=value, inline=False)
+                        miscData = f"{miscData}\n{name}: {value}"
             except:
                 pass
 
@@ -928,7 +935,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 await ctx.send(embed=embedVar)
             else:
                 await ctx.author.send(embed=embedVar)
-        except:
+        except HTTPException:
             if dmchannel is False:
                 await ctx.send(getLang("View", "v_4"))
             else:
@@ -1110,7 +1117,7 @@ async def _custom(ctx, charID='', field='', *, message: str):
     _setSQL(icharID, "misc", miscData)
     if fieldDel == False:
         await ctx.send(getLang("Custom", "cs_4").format(field))
-        await alertChannel.send(getLang("Custom", "lg_12").format(ctx.author, icharID, field.capitalize(), message))
+        await alertChannel.send(getLang("Log", "lg_12").format(ctx.author, icharID, field.capitalize(), message))
         return
 
     await ctx.send(getLang("Custom", "cs_5").format(field))
