@@ -7,13 +7,10 @@ c_webhooks = []
 
 
 async def send(ctx, name, message, custom_img=None):
-    if custom_img:
-        custom_img.strip()
-    valid = validators.url(custom_img)
     if ctx.message.attachments:
         attachment = ctx.message.attachments[0]
         img = attachment.url
-    elif custom_img and valid:
+    elif custom_img:
         img = custom_img
     else:
         img = ctx.author.avatar_url
