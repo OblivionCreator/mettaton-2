@@ -918,7 +918,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 for name, value in customFields.items():
                     print(name, value)
                     valid = validators.url(value)
-                    if name.lower() == 'portrait' and valid == True:
+                    if name.lower() == getLang("Send", "sn_5") and valid == True:
                         embedVar.set_image(url=value)
                     else:
                         print(valid)
@@ -1833,13 +1833,23 @@ async def send(ctx, id, *, message: str):
         await ctx.message.delete()
         return
 
-    name = charData[getLang("Fields", "name")]
-    name = name[0:80]
-
+    portJS = json.loads(charData["misc"])
     custom_img = None
 
-    portJS = json.loads(charData["misc"])
-    if getLang("Send", "sn_5") in portJS:
+    # Checks if in MRC and applies MRC nickname instead.
+
+    if (ctx.channel.name).lower() == getLang("Send", "sn_6") and getLang("Send", "sn_6").casefold() in (i.casefold() for
+                                                                                                        i in portJS):
+        i_l = {}
+        for i in portJS:
+            i_l[i.lower()] = portJS[i]
+        name = i_l[getLang("Send", "sn_6")]
+    else:
+        name = charData[getLang("Fields", "name")]
+
+    name = name[0:80]
+
+    if getLang("Send", "sn_5").lower().capitalize() in portJS:
         custom_img = portJS[getLang("Send", "sn_5")]
 
     await webhook_manager.send(ctx, name, message, custom_img)
