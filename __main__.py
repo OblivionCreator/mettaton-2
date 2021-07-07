@@ -918,7 +918,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 for name, value in customFields.items():
                     print(name, value)
                     valid = validators.url(value)
-                    if name.lower() == getLang("Send", "sn_5") and valid == True:
+                    if name.lower().capitalize() == getLang("Send", "sn_5") and valid == True:
                         embedVar.set_image(url=value)
                     else:
                         print(valid)
