@@ -46,6 +46,7 @@ gauth.SaveCredentialsFile("credentials.txt")
 drive = GoogleDrive(gauth)
 
 
+
 def getConfig():
     try:
         with open('.config', 'r') as file:
@@ -164,6 +165,15 @@ def allowPrefilled():
     print(bool(conf["allowprefilled"]))
     return bool(conf["allowprefilled"])
 
+async def getdm(ctx):
+    response = await bot.wait_for('message', check=message_check(channel=ctx.author.dm_channel))
+    attach = None
+    if response.attachments:
+        attach = str(response.attachments[0].url)
+        finalResponse = attach + ' ' + response.content
+    else:
+        finalResponse = response.content
+    return finalResponse
 
 @commands.is_owner()
 @bot.command(name=getLang("Commands", "clearconfig"))
@@ -367,10 +377,9 @@ async def block_help(ctx):
         return True
 
 
-async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='',
+async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='', misc=None,
                   status='Pending', charID=''):
     character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled)
-
     """
     :param conn:
     :param character:
@@ -385,9 +394,11 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
         conn.commit()
         return cur.lastrowid
     else:
-
+        if misc:
+            jsmisc = json.dumps(misc)
+            character = character + (jsmisc,)
         charwid = character + (int(charID),)
-        sql = '''UPDATE charlist SET owner=?,status=?,name=?,age=?,gender=?,abil=?,appear=?,backg=?,person=?,prefilled=? WHERE charID=?'''
+        sql = '''UPDATE charlist SET owner=?,status=?,name=?,age=?,gender=?,abil=?,appear=?,backg=?,person=?,prefilled=?,misc=? WHERE charID=?'''
         cur = conn.cursor()
         cur.execute(sql, charwid)
         conn.commit()
@@ -588,6 +599,7 @@ async def reRegister(ctx, charID):
         getLang("Fields", "background"): '',
         getLang("Fields", "personality"): '',
         getLang("Fields", "prefilled"): '',
+        'misc': ''
     }
 
     owner = charData[getLang("Fields", "owner")]
@@ -600,6 +612,7 @@ async def reRegister(ctx, charID):
     cfields[getLang("Fields", "background")] = charData["background"]
     cfields[getLang("Fields", "personality")] = charData["personality"]
     cfields[getLang("Fields", "prefilled")] = charData["prefilled"]
+    cfields["misc"] = charData["misc"]
 
     embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
 
@@ -630,6 +643,7 @@ async def reRegister(ctx, charID):
 
     user = ctx.author
     registerLoop = True
+    misc = json.loads(cfields["misc"])
 
     while (registerLoop):
 
@@ -637,7 +651,6 @@ async def reRegister(ctx, charID):
         fullList = []
         blankFields = ''
         fullFields = ''
-
         for i in cfields:
             temp = cfields.get(i)
             if temp == '' or temp is None:
@@ -665,7 +678,9 @@ async def reRegister(ctx, charID):
         field = await getdm(ctx)
         selector = field.lower()
 
-        if selector == getLang("Fields", "prefilled") and selector not in fullList and not allowPrefilled():
+        if selector == getLang("Fields", "custom"):
+            misc = await custom_Register(ctx, user, misc)
+        elif selector == getLang("Fields", "prefilled") and selector not in fullList and not allowPrefilled():
             await user.send(getLang("Register", "rg_13"))
         elif selector in cfields:
             await user.send(getLang("Register", "rg_8").format(selector.capitalize()))
@@ -673,7 +688,7 @@ async def reRegister(ctx, charID):
             await user.send(getLang("Register", "rg_9").format(selector.capitalize()))
         elif selector == getLang("Fields", "preview"):
             try:
-                await user.send(embed=previewChar(cfields=cfields, prefilled=None, name=cfields['name']))
+                await user.send(embed=previewChar(cfields=cfields, prefilled=None, name=cfields['name'], misc=misc))
             except:
                 previewTxt = charToTxt(charID=0, owner=ctx.author.id, status='Preview',
                                        name=cfields[getLang("Fields", "name")],
@@ -683,11 +698,9 @@ async def reRegister(ctx, charID):
                                        appear=cfields[getLang("Fields", "appearance")],
                                        backg=cfields[getLang("Fields", "background")],
                                        person=cfields[getLang("Fields", "personality")],
-                                       prefilled=cfields[getLang("Fields", "prefilled")], ctx=ctx)
-
+                                       prefilled=cfields[getLang("Fields", "prefilled")], misc=misc, ctx=ctx)
                 await user.send(getLang("Register", "rg_10"), file=discord.File(previewTxt))
         elif selector == 'done':
-
             await user.send(getLang("Register", "rg_11").format(charID))
             oldchr = _getCharDict(charID=charID)
             resub = await charadd(owner=owner, name=cfields[getLang("Fields", "name")],
@@ -697,7 +710,7 @@ async def reRegister(ctx, charID):
                                   appear=cfields[getLang("Fields", "appearance")],
                                   backg=cfields[getLang("Fields", "background")],
                                   person=cfields[getLang("Fields", "personality")],
-                                  prefilled=cfields[getLang("Fields", "prefilled")], charID=charID)
+                                  prefilled=cfields[getLang("Fields", "prefilled")], charID=charID, misc=misc)
             await alertGMs(ctx, charID, resub=True, old=oldchr)
             registerLoop = False
             return
@@ -707,6 +720,42 @@ async def reRegister(ctx, charID):
         else:
             await user.send(getLang("Register", "rg_13"))
 
+
+async def custom_Register(ctx, user, misc):
+    isFinished = False
+    while not isFinished:
+        ccFields = ''
+        misc_stripped = {}
+
+        if len(misc) > 0:
+            for i in misc:
+                misc_stripped[i.lower()] = misc[i]
+                ccFields = f"{ccFields} `{i}`,"
+        else:
+            ccFields = getLang("Register", "cs_2")
+        await user.send(getLang("Register", "cs_1").format(len(misc), ccFields))
+
+        field = await getdm(ctx)
+        if field.lower() == getLang("Send", "sn_6"):
+            field = field.upper()
+        elif field.lower().capitalize() == getLang("Send", "sn_5"):
+            field = field.lower().capitalize()
+        elif field.lower() == 'done':
+            isFinished = True
+            continue
+        await user.send(getLang("Register", "cs_3").format(field[0:100]))
+        content = await getdm(ctx)
+        if content.lower() == 'delete' and field in misc:
+            misc.pop(field)
+            print(misc)
+        elif content.lower() == 'cancel':
+            pass
+        elif content.lower() == 'delete' and field not in misc:
+            await user.send(getLang("Register", "cs_5").format(field))
+        else:
+            misc[field] = content
+            await user.send(getLang("Register", "cs_4").format(field[0:100]))
+    return misc
 
 @bot.command(pass_context=True, name=getLang("Commands", "reg"),
              aliases=[getLang("Commands", "rereg"), 'submit', 'resubmit'])
@@ -824,6 +873,11 @@ def getMember(owner, ctx):
 def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, person, prefilled, ctx, misc=''):
     curTime = int(time.time())
 
+    miscStr = ''
+    if misc != '':
+        for i in misc:
+            miscStr = f'{miscStr}{i}: {misc[i]}\n\n'
+
     path = f"charoverflow/{curTime}-{charID}.txt"
 
     charFile = open(path, 'x')
@@ -838,7 +892,7 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
     if appear != '': charTXT = charTXT + f"{getLang('Fields', 'appearance').capitalize()}: {appear}\n\n"
     if backg != '': charTXT = charTXT + f"{getLang('Fields', 'background').capitalize()}: {backg}\n\n"
     if person != '': charTXT = charTXT + f"{getLang('Fields', 'personality').capitalize()}: {person}\n\n"
-    if misc != '': charTXT = charTXT + misc
+    if misc != '': charTXT = charTXT + miscStr
     if prefilled == '' or prefilled is None:
         pass
     else:
@@ -915,15 +969,18 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
             try:
                 customFields = json.loads(charData["misc"])
                 miscData = ''
+                hasImg = False
                 for name, value in customFields.items():
                     print(name, value)
                     valid = validators.url(value)
                     if name.lower().capitalize() == getLang("Send", "sn_5") and valid == True:
                         embedVar.set_image(url=value)
+                        hasImg = True
                     else:
                         print(valid)
                         embedVar.add_field(name=name, value=value, inline=False)
                         miscData = f"{miscData}\n{name}: {value}"
+
             except:
                 pass
 
@@ -1084,6 +1141,11 @@ def _setSQL(charID, field, content):
 
 async def _custom(ctx, charID='', field='', *, message: str):
     alertChannel = bot.get_channel(LogChannel())
+
+    if field.lower().capitalize() == getLang("Send", "sn_5"):
+        field = field.lower().capitalize()
+    elif field.lower() == getLang("Send", "sn_6"):
+        field = field.upper()
 
     if charID.isnumeric():
         icharID = int(charID)
@@ -1370,20 +1432,12 @@ async def _deleteChar(ctx, charID):
         await ctx.send(getLang("Delete", "dl_6"))
 
 
-async def getdm(ctx):
-    response = await bot.wait_for('message', check=message_check(channel=ctx.author.dm_channel))
-    attach = None
-    if response.attachments:
-        attach = str(response.attachments[0].url)
-        finalResponse = attach + ' ' + response.content
-    else:
-        finalResponse = response.content
-    return finalResponse
-
-
-def previewChar(cfields=None, prefilled=None, name=None):
+def previewChar(cfields=None, prefilled=None, name=None, misc=None):
     embedVar = discord.Embed(title=getLang("Register", "pr_1"),
                              description=getLang("Register", "pr_2"), color=0xffD800)
+
+    if misc:
+        cfields["misc"] = misc
 
     if cfields is not None:
         embedVar.add_field(name=getLang("Fields", "name").capitalize() + ':', value=cfields[getLang("Fields", 'name')],
@@ -1404,6 +1458,9 @@ def previewChar(cfields=None, prefilled=None, name=None):
         if cfields['personality'] != '': embedVar.add_field(name=getLang("Fields", "personality").capitalize() + ':',
                                                             value=cfields[getLang("Fields", 'personality')],
                                                             inline=False)
+        tempVar = json.loads(cfields["misc"])
+        for i in tempVar:
+            embedVar.add_field(name=i, value=tempVar[i], inline=False)
 
     if prefilled:
         embedVar.add_field(name=getLang("Fields", "name").capitalize() + ':', value=name, inline=False)
