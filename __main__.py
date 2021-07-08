@@ -851,7 +851,7 @@ async def alertGMs(ctx, charID, resub=False, old=None):
                              backg=charData[getLang("Fields", "background")],
                              person=charData[getLang("Fields", "personality")],
                              prefilled=charData[getLang("Fields", "prefilled")],
-                             misc=charSTR, ctx=ctx)
+                             misc=charJS.items(), ctx=ctx)
 
         charFile = open(filePath, 'r')
 
@@ -1006,7 +1006,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                                  backg=charData[getLang("Fields", "background")],
                                  person=charData[getLang("Fields", "personality")],
                                  prefilled=charData[getLang("Fields", "prefilled")],
-                                 misc=miscData, ctx=ctx)
+                                 misc=customFields, ctx=ctx)
 
             charFile = open(filePath, 'r')
             if dmchannel is False:
