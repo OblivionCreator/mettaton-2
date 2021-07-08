@@ -964,6 +964,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                     embedVar.add_field(name=i.capitalize(), value=charData[i], inline=False)
 
         if charData["misc"] == '{}':
+            customFields = ''
             pass
         else:
             try:
