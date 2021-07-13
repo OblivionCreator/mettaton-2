@@ -398,7 +398,10 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
             jsmisc = json.dumps(misc)
             character = character + (jsmisc,)
         charwid = character + (int(charID),)
-        sql = '''UPDATE charlist SET owner=?,status=?,name=?,age=?,gender=?,abil=?,appear=?,backg=?,person=?,prefilled=?,misc=? WHERE charID=?'''
+        if misc:
+            sql = '''UPDATE charlist SET owner=?,status=?,name=?,age=?,gender=?,abil=?,appear=?,backg=?,person=?,prefilled=?,misc=? WHERE charID=?'''
+        else:
+            sql = '''UPDATE charlist SET owner=?,status=?,name=?,age=?,gender=?,abil=?,appear=?,backg=?,person=?,prefilled=? WHERE charID=?'''
         cur = conn.cursor()
         cur.execute(sql, charwid)
         conn.commit()
