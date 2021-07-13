@@ -837,10 +837,6 @@ async def alertGMs(ctx, charID, resub=False, old=None):
         charData = _getCharDict(charID)
 
         charJS = json.loads(charData["misc"])
-        charSTR = ''
-
-        for name, value in charJS.items():
-            charSTR = f"{charSTR}\n{name}:{value}"
 
         filePath = charToTxt(charID=charData["charID"], owner=charData[getLang("Fields", "owner")],
                              status=charData[getLang("Fields", "status")],
@@ -851,7 +847,7 @@ async def alertGMs(ctx, charID, resub=False, old=None):
                              backg=charData[getLang("Fields", "background")],
                              person=charData[getLang("Fields", "personality")],
                              prefilled=charData[getLang("Fields", "prefilled")],
-                             misc=charJS.items(), ctx=ctx)
+                             misc=charJS, ctx=ctx)
 
         charFile = open(filePath, 'r')
 
