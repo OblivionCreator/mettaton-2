@@ -534,7 +534,7 @@ async def alertUser(ctx, charID, status, reason):
         return
 
     try:
-        await user.send(getLang("Status", "st_5").format(charID, name[0:100], status, ctx.author.mention, reason))
+        await user.send(getLang("Status", "st_5").format(charID, name[0:100], status, reason))
     except Exception:
         await ctx.send(getLang("Status", "st_6").format(charID))
 
