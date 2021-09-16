@@ -687,7 +687,11 @@ async def reRegister(ctx, charID):
             await user.send(getLang("Register", "rg_13"))
         elif selector in cfields:
             await user.send(getLang("Register", "rg_8").format(selector.capitalize()))
-            cfields[selector] = await getdm(ctx)
+            tempField = await getdm(ctx)
+            if selector == getLang("Fields", "name"):
+                if await canonCheck(tempField, ctx.author):
+                    return
+            cfields[selector] = tempField
             await user.send(getLang("Register", "rg_9").format(selector.capitalize()))
         elif selector == getLang("Fields", "preview"):
             try:
@@ -703,7 +707,7 @@ async def reRegister(ctx, charID):
                                        person=cfields[getLang("Fields", "personality")],
                                        prefilled=cfields[getLang("Fields", "prefilled")], misc=misc, ctx=ctx)
                 await user.send(getLang("Register", "rg_10"), file=discord.File(previewTxt))
-        elif selector == 'done':
+        elif selector.lower() == getLang("Register", "rg_40"):
             await user.send(getLang("Register", "rg_11").format(charID))
             oldchr = _getCharDict(charID=charID)
             resub = await charadd(owner=owner, name=cfields[getLang("Fields", "name")],
