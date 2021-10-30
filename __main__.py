@@ -139,7 +139,9 @@ cst_prefix = getLang("Commands", "prefix")
 
 bot = commands.Bot(
     command_prefix=['mtt!', 'Rp!', 'RP!', 'rP!', cst_prefix],
-    intents=intents, case_insensitive=True)
+    intents=intents, case_insensitive=True,
+    allowed_mentions=discord.AllowedMentions(users=False, everyone=False, replied_user=False, roles=True))
+
 bot.remove_command("help")
 guild_ids = [770428394918641694]
 currentlyRegistering = []
