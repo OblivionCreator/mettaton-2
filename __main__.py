@@ -1253,7 +1253,7 @@ async def _list(ctx, pageIdentifier='', page=''):
         elif pageIdentifier == 'me':
             await getUserChars(ctx, ctx.author.id, pageSize, pageID=pageID)
             return
-        elif ctx.message.mentions[0].id:
+        elif ctx.message.mentions:
             await getUserChars(ctx, ctx.message.mentions[0].id, pageSize, pageID=pageID)
             return
         else:
@@ -1315,8 +1315,12 @@ async def _search(ctx, selector='', extra1='', extra2=''):
         return
 
     if (ctx.message.mentions):
-        await _list(ctx, pageIdentifier=selector, page=extra1)
-        return
+        if extra1.isnumeric():
+            extratemp = extra1
+            extra1 = str(ctx.message.mentions[0].id)
+            extra2 = extratemp
+        else:
+            extra1 = str(ctx.message.mentions[0].id)
 
     Sfield = False
 
