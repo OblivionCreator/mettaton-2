@@ -1165,7 +1165,7 @@ async def _custom(ctx, charID='', field='', *, message: str):
         await ctx.send(getLang("Custom", "cs_1"))
         return
 
-    if ctx.author.id != int(charData["owner"]):
+    if not charPermissionCheck(ctx, ctx.author.id):
         await ctx.send(getLang("Custom", "cs_2"))
         return
 
