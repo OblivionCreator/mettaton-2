@@ -135,7 +135,7 @@ async def configLoader():
         print(getLang("Log", "lg_6"))
 
 
-cst_prefix = getLang("Commands", "prefix")
+cst_prefix = getLang("Commands", "CMD_PREFIX")
 
 bot = commands.Bot(
     command_prefix=['mtt!', 'Rp!', 'RP!', 'rP!', cst_prefix],
@@ -177,8 +177,9 @@ async def getdm(ctx):
         finalResponse = response.content
     return finalResponse
 
+
 @commands.is_owner()
-@bot.command(name=getLang("Commands", "clearconfig"))
+@bot.command(name=getLang("Commands", "CMD_CLEARCONFIG"))
 async def clearconfig(ctx):
     config = configFields()
 
@@ -190,7 +191,7 @@ async def clearconfig(ctx):
 
     file.write(cfgJson)
 
-    await ctx.send(getLang("ClearConfig", "cc_1"))
+    await ctx.send(getLang("ClearConfig", "CLEAR_CONFIG_SUCCESS"))
     return
 
 
@@ -203,49 +204,49 @@ def getDenyList():
 
 # Returns current Deny List
 
-@bot.command(name=getLang("Commands", "up_de"))
+@bot.command(name=getLang("Commands", "CMD_UPDATEDENY"))
 async def update_deny(ctx, act, term=''):
     term = term.lower()
 
     if not await checkGM(ctx):
-        await ctx.send(getLang("DenyList", "dl_1"))
+        await ctx.send(getLang("DenyList", "DENYLIST_FAILED_NO_PERMISSION"))
         return
 
-    if act.lower() == 'list':
-        await ctx.send(f"{getLang('DenyList', 'dl_2')}\n{listDeny()}")
+    if act.lower() == getLang('DenyList', 'DENYLIST_LIST_ITEMS'):
+        await ctx.send(f"{getLang('DenyList', 'DENYLIST_TERMS')}\n{listDeny()}")
         return
 
-    if act == 'add':
+    if act == getLang('DenyList', 'DENYLIST_ADD_ITEM'):
 
         if term == '':
-            await ctx.send(getLang("DenyList", "dl_3"))
+            await ctx.send(getLang("DenyList", "DENYLIST_FAILED_NO_TERMS"))
 
         addSt = addDeny(term)
         if addSt == False:
-            await ctx.send(getLang("DenyList", "dl_4"))
+            await ctx.send(getLang("DenyList", "DENYLIST_FAILED_DUPLICATE"))
             return
-        await ctx.send(getLang("DenyList", "dl_5").format(term))
+        await ctx.send(getLang("DenyList", "DENYLIST_SUCCESS_ADDED").format(term))
         return
 
     if act.lower() == 'remove':
 
         if term == '':
-            await ctx.send(getLang("DenyList", "dl_3"))
+            await ctx.send(getLang("DenyList", "DENYLIST_FAILED_NO_TERMS"))
 
         if delDeny(term) == False:
-            await ctx.send(getLang("DenyList", "dl_6"))
+            await ctx.send(getLang("DenyList", "DENYLIST_BAD_NAME"))
             return
-        await ctx.send(getLang("DenyList", "dl_7").format(term))
+        await ctx.send(getLang("DenyList", "DENYLIST_SUCCESS_REMOVED").format(term))
         return
 
-    await ctx.send(getLang("DenyList", "dl_8"))
+    await ctx.send(getLang("DenyList", "DENYLIST_FAILED_INVALID_ACTION"))
 
 
 def listDeny():
     denyList = getDenyList()
 
     if len(denyList) == 0:
-        return getLang("DenyList", "dl_9")
+        return getLang("DenyList", "DENYLIST_EMPTY")
 
     denySTR = ''
 
@@ -455,27 +456,27 @@ def message_check(channel=None, author=None, content=None, ignore_bot=True, lowe
     return check
 
 
-@bot.command(name=getLang("Commands", "setgm"))
+@bot.command(name=getLang("Commands", "CMD_SETGMCHANNEL"))
 async def _setGMCChannel(ctx):
     role_names = [role.name for role in ctx.author.roles]
 
     if not await checkGM(ctx):
-        await ctx.send(getLang("GMChannel", "gmc_1"))
+        await ctx.send(getLang("GMChannel", "GMCHANNEL_NO_PERMISSION"))
         return
 
     updateConfig('gmchannel', ctx.channel.id)
 
-    await ctx.send(getLang("GMChannel", "gmc_2"))
+    await ctx.send(getLang("GMChannel", "GMCHANNEL_SUCCESS"))
 
 
-@bot.command(name=getLang("Commands", "setlog"))
+@bot.command(name=getLang("Commands", "CMD_SETLOGCHANNEL"))
 async def _setLogChannel(ctx):
     if not await checkGM(ctx):
-        await ctx.send(getLang("LogChannel", "lc_1"))
+        await ctx.send(getLang("LogChannel", "LOGCHANNEL_NO_PERMISSION"))
         return
 
     updateConfig('logchannel', ctx.channel.id)
-    await ctx.send(getLang("LogChannel", "lc_2"))
+    await ctx.send(getLang("LogChannel", "LOGCHANNEL_SUCCESS"))
 
 
 def updateConfig(field, value):
@@ -490,27 +491,28 @@ def updateConfig(field, value):
 
 
 statuses = {
-    getLang("Status", "cmd_st_0"): getLang("Status", "conv_st_0"),
-    getLang("Status", "cmd_st_1"): getLang("Status", "conv_st_1"),
-    getLang("Status", "cmd_st_2"): getLang("Status", "conv_st_2"),
-    getLang("Status", "cmd_st_3"): getLang("Status", "conv_st_2"),
-    getLang("Status", "cmd_st_4"): getLang("Status", "conv_st_4")
+    getLang("Status", "RAW_STATUS_PENDING"): getLang("Status", "STATUS_PENDING"),
+    getLang("Status", "RAW_STATUS_APPROVE"): getLang("Status", "STATUS_APPROVED"),
+    getLang("Status", "RAW_STATUS_DENY"): getLang("Status", "STATUS_DENIED"),
+    getLang("Status", "RAW_STATUS_BOILERPLATE"): getLang("Status", "STATUS_DENIED"),
+    getLang("Status", "RAW_STATUS_KILL"): getLang("Status", "STATUS_DEAD")
 }
 
 
-@bot.command(aliases=[getLang("Status", "cmd_st_3")])
+@bot.command(aliases=[getLang("Status", "RAW_STATUS_BOILERPLATE")])
 async def bp(ctx, charID):
-    ctx.invoked_with = getLang("Status", "cmd_st_3")
-    await approve(ctx, charID, reason=getLang("Status", "st_1").format(charID))
+    ctx.invoked_with = getLang("Status", "RAW_STATUS_BOILERPLATE")
+    await approve(ctx, charID, reason=getLang("Status", "STATUS_RESPONSE_BOILERPLATE").format(charID))
 
 
-@bot.command(name=getLang("Status", "cmd_st_1"),
-             aliases=[getLang("Status", "cmd_st_0"), getLang("Status", "cmd_st_2"), getLang("Status", "cmd_st_4")])
+@bot.command(name=getLang("Status", "RAW_STATUS_APPROVE"),
+             aliases=[getLang("Status", "STATUS_PENDING"), getLang("Status", "RAW_STATUS_DENY"),
+                      getLang("Status", "RAW_STATUS_KILL")])
 async def approve(ctx, charID, *, reason: str = ''):
     if reason == '' and not ctx.message.attachments:
-        reason = getLang("Status", "st_2")
+        reason = getLang("Status", "STATUS_RESPONSE_NO_REASON")
     if len(reason) > 1750:
-        await ctx.send(getLang("Status", "st_3"))
+        await ctx.send(getLang("Status", "STATUS_RESPONSE_FAILED_LONG"))
         return
     await _changeStatus(ctx, charID=charID, charStatus=statuses[ctx.invoked_with], reason=reason)
 
@@ -532,24 +534,23 @@ async def alertUser(ctx, charID, status, reason):
     user = ctx.guild.get_member(int(ownerID))
 
     if user == None:
-        await ctx.send(getLang("Status", "st_4"))
+        await ctx.send(getLang("Status", "STATUS_RESPONSE_FAILED_BAD_USER").format(charID))
         return
-
     try:
-        await user.send(getLang("Status", "st_5").format(charID, name[0:100], status, reason))
+        await user.send(getLang("Status", "STATUS_RESPONSE_SUCCESS").format(charID, name[0:100], status, reason))
     except Exception:
-        await ctx.send(getLang("Status", "st_6").format(charID))
+        await ctx.send(getLang("Status", "STATUS_RESPONSE_FAILED_BAD_DM").format(charID))
 
 
 async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
     if not await checkGM(ctx):
-        await ctx.send(getLang("Status", "st_7"))
+        await ctx.send(getLang("Status", "STATUS_RESPONSE_FAILED_NO_PERMISSION"))
         return
 
     if charID.isnumeric():
         charInt = int(charID)
     else:
-        await ctx.send(getLang("Status", "st_8"))
+        await ctx.send(getLang("Status", "STATUS_RESPONSE_FAILED_BAD_ID"))
         return
 
     if ctx.message.attachments:
@@ -560,7 +561,7 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
     cursor.execute(sql, [charStatus, charInt])
     conn.commit()
 
-    if charStatus == getLang("Status", "conv_st_1"):
+    if charStatus == getLang("Status", "STATUS_APPROVED"):
         charData = _getCharDict(charInt)
         userid = charData["owner"]
         user = ctx.guild.get_member(int(userid))
@@ -568,9 +569,9 @@ async def _changeStatus(ctx, charID='', charStatus='Pending', reason=''):
         await user.add_roles(role)
 
     await alertUser(ctx, charInt, charStatus, reason)
-    await ctx.send(getLang("Status", "st_9").format(charID, charStatus))
+    await ctx.send(getLang("Status", "STATUS_CHANGE_SUCCESS").format(charID, charStatus))
     logChannel = bot.get_channel(LogChannel())
-    await logChannel.send(getLang("Status", "st_10").format(ctx.author, charInt, charStatus, reason))
+    await logChannel.send(getLang("Status", "STATUS_CHANGE_LOG").format(ctx.author, charInt, charStatus, reason))
 
 
 async def reRegister(ctx, charID):
@@ -580,20 +581,20 @@ async def reRegister(ctx, charID):
     owner = cursor.fetchone()
 
     if owner is None:
-        await ctx.send(getLang("Register", "rg_1"))
+        await ctx.send(getLang("Register", "REGISTER_FAILED_BAD_CHARACTER"))
         return
     else:
         ownerP = owner[0]
 
     if int(ownerP) != ctx.author.id:
         await logMSG(getLang("Log", "lg_9").format(ctx.author.id, ownerP))
-        await ctx.send(getLang("Register", "rg_2"))
+        await ctx.send(getLang("Register", "REGISTER_FAILED_BAD_OWNER"))
         return
 
     charData = _getCharDict(int(charID))
 
     if charData == 'INVALID CHARACTER':
-        ctx.send(getLang("Register", "rg_1"))
+        ctx.send(getLang("Register", "REGISTER_FAILED_BAD_CHARACTER"))
 
     cfields = {
         getLang("Fields", "name"): '',
@@ -622,7 +623,7 @@ async def reRegister(ctx, charID):
     embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
 
     try:
-        await ctx.author.send(getLang("Register", "rg_3"), embed=embedV)
+        await ctx.author.send(getLang("Register", "REGISTER_PREVIEW"), embed=embedV)
     except:
         filePath = charToTxt(charID=charData["charID"],
                              owner=charData[getLang("Fields", "owner")],
@@ -637,14 +638,14 @@ async def reRegister(ctx, charID):
         charFile = open(filePath, 'r')
 
         try:
-            await ctx.author.send(getLang("Register", "rg_3"), file=discord.File(filePath))
+            await ctx.author.send(getLang("Register", "REGISTER_PREVIEW"), file=discord.File(filePath))
         except:
-            await ctx.send(getLang("Register", "rg_4"))
+            await ctx.send(getLang("Register", "REGISTER_FAILED_DM"))
             return
         charFile.close()
         clearLog()
 
-    await ctx.send(getLang("Register", "rg_5"))
+    await ctx.send(getLang("Register", "REGISTER_DM_SENT"))
 
     user = ctx.author
     registerLoop = True
@@ -676,9 +677,9 @@ async def reRegister(ctx, charID):
         presfields = ''
 
         if not blankFields == '':
-            presfields = "\n" + getLang("Register", "rg_6").format(blankFields)
+            presfields = "\n" + getLang("Register", "REGISTER_REDO_FIELDS").format(blankFields)
 
-        await user.send(getLang("Register", "rg_7").format(fullFields, presfields))
+        await user.send(getLang("Register", "REGISTER_FIELDS").format(fullFields, presfields))
 
         field = await getdm(ctx)
         selector = field.lower()
@@ -686,15 +687,15 @@ async def reRegister(ctx, charID):
         if selector == getLang("Fields", "custom"):
             misc = await custom_Register(ctx, user, misc)
         elif selector == getLang("Fields", "prefilled") and selector not in fullList and not allowPrefilled():
-            await user.send(getLang("Register", "rg_13"))
+            await user.send(getLang("Register", "REGISTER_BAD_FIELD"))
         elif selector in cfields:
-            await user.send(getLang("Register", "rg_8").format(selector.capitalize()))
+            await user.send(getLang("Register", "REGISTER_FIELD_INPUT").format(selector.capitalize()))
             tempField = await getdm(ctx)
             if selector == getLang("Fields", "name"):
                 if await canonCheck(tempField, ctx.author):
                     return
             cfields[selector] = tempField
-            await user.send(getLang("Register", "rg_9").format(selector.capitalize()))
+            await user.send(getLang("Register", "REGISTER_FIELD_CHANGED").format(selector.capitalize()))
         elif selector == getLang("Fields", "preview"):
             try:
                 await user.send(embed=previewChar(cfields=cfields, prefilled=None, name=cfields['name'], misc=misc))
@@ -708,9 +709,9 @@ async def reRegister(ctx, charID):
                                        backg=cfields[getLang("Fields", "background")],
                                        person=cfields[getLang("Fields", "personality")],
                                        prefilled=cfields[getLang("Fields", "prefilled")], misc=misc, ctx=ctx)
-                await user.send(getLang("Register", "rg_10"), file=discord.File(previewTxt))
-        elif selector.lower() == getLang("Register", "rg_40"):
-            await user.send(getLang("Register", "rg_11").format(charID))
+                await user.send(getLang("Register", "REGISTER_PREVIEW_LONG"), file=discord.File(previewTxt))
+        elif selector.lower() == getLang("Register", "REGISTER_COMPLETE"):
+            await user.send(getLang("Register", "REGISTER_SUBMISSION").format(charID))
             oldchr = _getCharDict(charID=charID)
             resub = await charadd(owner=owner, name=cfields[getLang("Fields", "name")],
                                   age=cfields[getLang("Fields", "age")],
@@ -723,11 +724,11 @@ async def reRegister(ctx, charID):
             await alertGMs(ctx, charID, resub=True, old=oldchr)
             registerLoop = False
             return
-        elif selector == getLang("Register", "rg_24"):
-            await user.send(getLang("Register", "rg_12"))
+        elif selector == getLang("Register", "REGISTER_EXIT"):
+            await user.send(getLang("Register", "REGISTER_REDO_EXIT"))
             return
         else:
-            await user.send(getLang("Register", "rg_13"))
+            await user.send(getLang("Register", "REGISTER_BAD_FIELD"))
 
 
 async def custom_Register(ctx, user, misc):
@@ -741,18 +742,18 @@ async def custom_Register(ctx, user, misc):
                 misc_stripped[i.lower()] = misc[i]
                 ccFields = f"{ccFields} `{i}`,"
         else:
-            ccFields = getLang("Register", "cs_2")
-        await user.send(getLang("Register", "cs_1").format(len(misc), ccFields))
+            ccFields = getLang("Register", "REGISTER_CUSTOM_NO_FIELDS")
+        await user.send(getLang("Register", "REGISTER_CUSTOM_ASK_GENERIC").format(len(misc), ccFields))
 
         field = await getdm(ctx)
-        if field.lower() == getLang("Send", "sn_6"):
+        if field.lower() == getLang("Send", "SEND_MRC"):
             field = field.upper()
         elif field.lower().capitalize() == getLang("Send", "sn_5"):
             field = field.lower().capitalize()
         elif field.lower() == 'done':
             isFinished = True
             continue
-        await user.send(getLang("Register", "cs_3").format(field[0:100]))
+        await user.send(getLang("Register", "REGISTER_CUSTOM_ASK_SPECIFIC").format(field[0:100]))
         content = await getdm(ctx)
         if content.lower() == 'delete' and field in misc:
             misc.pop(field)
@@ -760,17 +761,18 @@ async def custom_Register(ctx, user, misc):
         elif content.lower() == 'cancel':
             pass
         elif content.lower() == 'delete' and field not in misc:
-            await user.send(getLang("Register", "cs_5").format(field))
+            await user.send(getLang("Register", "REGISTER_CUSTOM_DELETE_FAILED").format(field))
         else:
             misc[field] = content
-            await user.send(getLang("Register", "cs_4").format(field[0:100]))
+            await user.send(getLang("Register", "REGISTER_CUSTOM_SUCCESS").format(field[0:100]))
     return misc
 
-@bot.command(pass_context=True, name=getLang("Commands", "reg"),
-             aliases=[getLang("Commands", "rereg"), 'submit', 'resubmit'])
+
+@bot.command(pass_context=True, name=getLang("Commands", "CMD_REGISTER"),
+             aliases=[getLang("Commands", "CMD_REREGISTER"), 'submit', 'resubmit'])
 async def register(ctx, charID=''):
     if ctx.author.id in currentlyRegistering:
-        await ctx.send(getLang("Register", "rg_14"))
+        await ctx.send(getLang("Register", "REGISTER_BUSY"))
         return
 
     currentlyRegistering.append(ctx.author.id)
@@ -781,18 +783,18 @@ async def register(ctx, charID=''):
             ctx.author.id)  # Fixed Bug with sending 'Please check your DMs!' as well as 'You do not own this character!' - Thanks @Venom134
         return
 
-    await ctx.send(getLang("Register", "rg_5"))
+    await ctx.send(getLang("Register", "REGISTER_DM_SENT"))
 
     await logMSG(getLang("Log", "lg_10").format(ctx.author))
     user = ctx.author
     try:
-        sendStr = f'{getLang("Register", "rg_15")}\n'
+        sendStr = f'{getLang("Register", "REGISTER_START")}\n'
         if allowPrefilled():
-            sendStr = f'{sendStr}{getLang("Register", "rg_15_1")}\n'
-        sendStr = f'{sendStr}{getLang("Register", "rg_15_2")}'
+            sendStr = f'{sendStr}{getLang("Register", "REGISTER_START_PREFILLED")}\n'
+        sendStr = f'{sendStr}{getLang("Register", "REGISTER_START_EXIT")}'
         await user.send(sendStr)
     except:
-        await ctx.send(getLang("Register", "rg_4"))
+        await ctx.send(getLang("Register", "REGISTER_FAILED_DM"))
         currentlyRegistering.remove(user.id)
         return
     await _registerChar(ctx, user)
@@ -804,10 +806,10 @@ async def alertGMs(ctx, charID, resub=False, old=None):
     ping = True
 
     if old:
-        if old[getLang("Fields", "status")] == getLang("Status", "conv_st_0"):
+        if old[getLang("Fields", "status")] == getLang("Status", "STATUS_PENDING"):
             ping = False
 
-    embedC.set_footer(text=getLang("Register", "rg_16").format(charID))
+    embedC.set_footer(text=getLang("Register", "REGISTER_STATUS_CHANGE").format(charID))
 
     channelID = GMChannel()
 
@@ -816,7 +818,7 @@ async def alertGMs(ctx, charID, resub=False, old=None):
     isResubmit = ''
 
     if resub is True:
-        isResubmit = f'\n{getLang("Register", "rg_17").format(charID)}'
+        isResubmit = f'\n{getLang("Register", "REGISTER_RESUBMIT").format(charID)}'
 
         new = _getCharDict(charID)
         newStr = ''
@@ -835,11 +837,13 @@ async def alertGMs(ctx, charID, resub=False, old=None):
 
     try:
         if ping:
-            await channel.send(getLang("Register", "rg_18").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
-                               embed=embedC)
+            await channel.send(
+                getLang("Register", "REGISTER_SUBMIT").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
+                embed=embedC)
         else:
-            await channel.send(getLang("Register", "rg_18_1").format(isResubmit, ctx.author, ctx.author.id),
-                               embed=embedC)
+            await channel.send(
+                getLang("Register", "REGISTER_SUBMIT_NODM").format(isResubmit, ctx.author, ctx.author.id),
+                embed=embedC)
 
     except HTTPException as e:
 
@@ -861,11 +865,13 @@ async def alertGMs(ctx, charID, resub=False, old=None):
         charFile = open(filePath, 'r')
 
         if ping:
-            await channel.send(getLang("Register", "rg_18").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
-                               file=discord.File(filePath))
+            await channel.send(
+                getLang("Register", "REGISTER_SUBMIT").format(GMRole.id, isResubmit, ctx.author, ctx.author.id),
+                file=discord.File(filePath))
         else:
-            await channel.send(getLang("Register", "rg_18_1").format(isResubmit, ctx.author, ctx.author.id),
-                               file=discord.File(filePath))
+            await channel.send(
+                getLang("Register", "REGISTER_SUBMIT_NODM").format(isResubmit, ctx.author, ctx.author.id),
+                file=discord.File(filePath))
     except Exception as e:
         await logHandler(getLang("Log", "lg_11"))
 
@@ -909,7 +915,7 @@ def charToTxt(charID, owner, status, name, age, gender, abil, appear, backg, per
     return path
 
 
-@bot.command(name=getLang("Commands", "view"), aliases=['cm', 'charmanage'])
+@bot.command(name=getLang("Commands", "CMD_VIEW"), aliases=['cm', 'charmanage'])
 async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
     '''Brings up character information for the specified character.
 
@@ -935,22 +941,22 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
         charData = _getCharDict(sanID)
 
         if charData == 'INVALID CHARACTER':
-            await ctx.send(getLang("View", "v_1"))
+            await ctx.send(getLang("View", "VIEW_FAILED_BAD_CHARACTER"))
             return
 
         color = 0x000000
 
-        if (charData[getLang("Fields", "status")] == getLang("Status", "conv_st_0")):
+        if (charData[getLang("Fields", "status")] == getLang("Status", "STATUS_PENDING")):
             color = 0xFFD800
-        elif (charData[getLang("Fields", "status")] == getLang("Status", "conv_st_1")):
+        elif (charData[getLang("Fields", "status")] == getLang("Status", "STATUS_APPROVED")):
             color = 0x00FF00
-        elif (charData[getLang("Fields", "status")] == getLang("Status", "conv_st_2")):
+        elif (charData[getLang("Fields", "status")] == getLang("Status", "STATUS_DENIED")):
             color = 0xFF0000
 
         member = ctx.message.guild.get_member(int(charData[getLang("Fields", "owner")]))
 
-        embedVar = discord.Embed(title=getLang("View", "v_2").format(sanID),
-                                 description=getLang("View", "v_3").format(sanID), color=color,
+        embedVar = discord.Embed(title=getLang("View", "VIEW_CHARACTER_ID").format(sanID),
+                                 description=getLang("View", "VIEW_REGISTER_ID").format(sanID), color=color,
                                  inline=False)
 
         noDisplay = ['charID', 'misc', getLang("Fields", "owner")]
@@ -966,7 +972,8 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 if charData[i] == '' or charData[i] is None:
                     pass
                 else:
-                    embedVar.add_field(name=i.capitalize(), value=charData[i], inline=False)
+                    embedVar.add_field(name=i.title(), value=charData[i],
+                                       inline=False)  # Thanks @Casey C. Creeks#0938 for .title() reminder!
 
         if charData["misc"] == '{}':
             customFields = ''
@@ -1000,9 +1007,9 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 await ctx.author.send(embed=embedVar)
         except HTTPException:
             if dmchannel is False:
-                await ctx.send(getLang("View", "v_4"))
+                await ctx.send(getLang("View", "VIEW_LONG_FILE_DUMP"))
             else:
-                ctx.author.send(getLang("View", "v_4"))
+                ctx.author.send(getLang("View", "VIEW_LONG_FILE_DUMP"))
             filePath = charToTxt(charID=charData["charID"], owner=charData[getLang("Fields", "owner")],
                                  status=charData[getLang("Fields", "status")],
                                  name=charData[getLang("Fields", "name")], age=charData[getLang("Fields", "age")],
@@ -1084,7 +1091,7 @@ def _getCharDict(charID=0):
     return charData
 
 
-@bot.command(name=getLang("Commands", "set"), aliases=['setprop'])
+@bot.command(name=getLang("Commands", "CMD_SET"), aliases=['setprop'])
 async def _set(ctx, charID, field, *, message: str):
     alertChannel = bot.get_channel(LogChannel())
 
@@ -1092,47 +1099,47 @@ async def _set(ctx, charID, field, *, message: str):
         fSan = convertField(field.lower())
 
         if fSan == 'charID':
-            await ctx.send(getLang("Set", "s_1"))
+            await ctx.send(getLang("Set", "SET_FAILED_ID_STATIC"))
             return
     else:
         await _custom(ctx, charID=charID, field=field, message=message)
         return
 
-    if message == '' or message == getLang("Set", "s_2"):
+    if message == '' or message == getLang("Set", "SET_DELETE"):
         message = ''
         if fSan == getLang("Fields", "name"):
-            await ctx.send(getLang("Set", "s_3"))
+            await ctx.send(getLang("Set", "SET_FAILED_NAME_REQUIRED"))
             return
         elif fSan == 'misc':
             message = '{}'
 
     if fSan == 'owner' or fSan == 'status':
         if await checkGM(ctx) is False:
-            await ctx.send(getLang("Set", "s_4"))
+            await ctx.send(getLang("Set", "SET_FAILED_NO_PROPERTY_PERMISSION"))
             return
 
     if charID.isnumeric():
         icharID = int(charID)
     else:
-        await ctx.send(getLang("View", "v_1"))
+        await ctx.send(getLang("View", "VIEW_FAILED_BAD_CHARACTER"))
         return
 
     ownerID = _charExists(icharID)
 
     if ownerID == False:
-        await ctx.send(getLang("View", "v_1"))
+        await ctx.send(getLang("View", "VIEW_FAILED_BAD_CHARACTER"))
         return
 
     if not charPermissionCheck(ctx, ownerID):
-        await ctx.send(getLang("Set", "s_5"))
+        await ctx.send(getLang("Set", "SET_FAILED_NO_PERMISSION"))
         return
 
     _setSQL(icharID, fSan, message)
 
     if message == '':
-        await ctx.send(getLang("Set", "s_6").format(field.capitalize()))
+        await ctx.send(getLang("Set", "SET_FIELD_DELETED").format(field.capitalize()))
     else:
-        await ctx.send(getLang("Set", "s_7").format(field.capitalize()))
+        await ctx.send(getLang("Set", "SET_FIELD_CHANGED").format(field.capitalize()))
 
     await alertChannel.send(getLang("Log", "lg_12").format(ctx.author, icharID, field.capitalize(), message))
 
@@ -1150,51 +1157,51 @@ async def _custom(ctx, charID='', field='', *, message: str):
 
     if field.lower().capitalize() == getLang("Send", "sn_5"):
         field = field.lower().capitalize()
-    elif field.lower() == getLang("Send", "sn_6"):
+    elif field.lower() == getLang("Send", "SEND_MRC"):
         field = field.upper()
 
     if charID.isnumeric():
         icharID = int(charID)
     else:
-        await ctx.send(getLang("Custom", "cs_1"))
+        await ctx.send(getLang("Custom", "CUSTOM_FAILED_BAD_CHARACTER"))
         return
 
     charData = _getCharDict(icharID)
 
     if charData == 'INVALID CHARACTER':
-        await ctx.send(getLang("Custom", "cs_1"))
+        await ctx.send(getLang("Custom", "CUSTOM_FAILED_BAD_CHARACTER"))
         return
 
     if not charPermissionCheck(ctx, ctx.author.id):
-        await ctx.send(getLang("Custom", "cs_2"))
+        await ctx.send(getLang("Custom", "CUSTOM_FAILED_NOT_OWNER"))
         return
 
     customFields = json.loads(charData["misc"])
     fieldDel = False
 
-    if message.lower() == getLang("Set", "s_2"):
+    if message.lower() == getLang("Set", "SET_DELETE"):
         try:
             customFields.pop(field)
             fieldDel = True
         except:
-            await ctx.send(getLang("Custom", "cs_3"))
+            await ctx.send(getLang("Custom", "CUSTOM_FAILED_BAD_FIELD"))
             return
     else:
         customFields[field] = message
     miscData = json.dumps(customFields)
     _setSQL(icharID, "misc", miscData)
     if fieldDel == False:
-        await ctx.send(getLang("Custom", "cs_4").format(field))
+        await ctx.send(getLang("Custom", "CUSTOM_SUCCESS_FIELD_SET").format(field))
         await alertChannel.send(getLang("Log", "lg_12").format(ctx.author, icharID, field.capitalize(), message))
         return
 
-    await ctx.send(getLang("Custom", "cs_5").format(field))
+    await ctx.send(getLang("Custom", "CUSTOM_SUCCESS_FIELD_DELETED").format(field))
 
     await alertChannel.send(getLang("Log", "lg_13").format(ctx.author, icharID, field.capitalize()))
 
 
 async def _custom_error(ctx, args):
-    await ctx.send(getLang("Custom", "cs_6"))
+    await ctx.send(getLang("Custom", "CUSTOM_FAILED_BLANK_FIELD"))
 
 
 @dataclass
@@ -1221,17 +1228,18 @@ async def getUserChars(ctx, userID, pageSize, pageID):
 
     for i in charList:
         member = ctx.message.guild.get_member(int(i.owner))
-        charListStr = getLang("GetChars", "gc_3").format(charListStr, i.id, i.name[0:75], member or i.owner) + '\n'
+        charListStr = getLang("GetChars", "GET_CHAR_INFO").format(charListStr, i.id, i.name[0:75],
+                                                                  member or i.owner) + '\n'
 
     if len(charList) == 0:
-        await ctx.send(getLang("GetChars", "gc_1"))
+        await ctx.send(getLang("GetChars", "GET_FAILED_NONE_MATCHED"))
         return
 
-    await ctx.send(getLang("GetChars", "gc_2").format((member or userID + getLang("Fields", "left")), (pageNo + 1),
-                                                      math.ceil(count / pageSize), charListStr))
+    await ctx.send(getLang("GetChars", "GET_LIST").format((member or userID + getLang("Fields", "left")), (pageNo + 1),
+                                                          math.ceil(count / pageSize), charListStr))
 
 
-@bot.command(name=getLang("Commands", "list"))
+@bot.command(name=getLang("Commands", "CMD_LIST"))
 async def _list(ctx, pageIdentifier='', page=''):
     '''Shows a list of all characters, sorted into pages of 15 Characters.
     Mentioning a user or user ID will bring up all characters belonging to that user.
@@ -1277,9 +1285,10 @@ async def _list(ctx, pageIdentifier='', page=''):
 
     for i in charList:
         member = ctx.message.guild.get_member(int(i.owner))
-        charListStr = getLang("List", "ls_2").format(charListStr, i.id, i.name[0:75], member or i.owner) + '\n'
+        charListStr = getLang("List", "LIST_CHAR_INFO").format(charListStr, i.id, i.name[0:75],
+                                                               member or i.owner) + '\n'
     print(charListStr)
-    await ctx.send(getLang("List", "ls_1").format(pageNo + 1, math.ceil(count / pageSize), charListStr))
+    await ctx.send(getLang("List", "LIST_ALL").format(pageNo + 1, math.ceil(count / pageSize), charListStr))
 
 
 fields = [getLang("Fields", 'owner'), 'ownerid', getLang("Fields", 'status'), getLang("Fields", 'name'), 'charid', 'id',
@@ -1308,10 +1317,10 @@ def convertField(selector):
     return selector
 
 
-@bot.command(name=getLang("Commands", "search"))
+@bot.command(name=getLang("Commands", "CMD_SEARCH"))
 async def _search(ctx, selector='', extra1='', extra2=''):
     if selector == '':
-        await ctx.send(getLang("Search", "sr_1"))
+        await ctx.send(getLang("Search", "SEARCH_FAILED_NO_QUERY"))
         return
 
     if (ctx.message.mentions):
@@ -1363,32 +1372,33 @@ async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
 
     for i in charList:
         member = ctx.message.guild.get_member(int(i.owner))
-        charListStr = getLang("GetChars", "gc_3").format(charListStr, i.id, i.name[0:75], member or i.owner) + '\n'
+        charListStr = getLang("GetChars", "GET_CHAR_INFO").format(charListStr, i.id, i.name[0:75],
+                                                                  member or i.owner) + '\n'
 
     await ctx.send(
-        f'{getLang("Search", "sr_2").format(pageNo + 1, math.ceil(count / 25))} \n{charListStr}')
+        f'{getLang("Search", "SEARCH_LIST_MATCHING").format(pageNo + 1, math.ceil(count / 25))} \n{charListStr}')
 
 
-@bot.command(name=getLang("Commands", "delete"))
+@bot.command(name=getLang("Commands", "CMD_DELETE"))
 async def _delete(ctx, charDel='', confirmation=''):
     if charDel.isnumeric():
-        if confirmation.lower() == getLang("Delete", "dl_1"):
+        if confirmation.lower() == getLang("Delete", "DELETE_CONFIRM"):
             await _deleteChar(ctx, int(charDel))
             return
         else:
-            await ctx.send(getLang("Delete", "dl_2"))
+            await ctx.send(getLang("Delete", "DELETE_REQUEST_CONFIRMATION"))
             response = await bot.wait_for("message", check=message_check())
-            if response.content.lower() == getLang("Delete", "dl_1"):
+            if response.content.lower() == getLang("Delete", "DELETE_CONFIRM"):
                 await _deleteChar(ctx, int(charDel))
                 return
     else:
         await ctx.send("Invalid Character ID!")
 
 
-@bot.command(name=getLang("Commands", "undelete"), aliases=[getLang("Commands", "recover")])
+@bot.command(name=getLang("Commands", "CMD_RESTORE"), aliases=[getLang("Commands", "CMD_RESTORE_UNDELETE")])
 async def _undelete(ctx, charID):
     if not await checkGM(ctx):
-        await ctx.send(getLang("Delete", "dl_3"))
+        await ctx.send(getLang("Delete", "DELETE_FAILED_NO_PERMISSION"))
         return
 
     if charID.isnumeric():
@@ -1398,7 +1408,7 @@ async def _undelete(ctx, charID):
 
     cursor.execute("UPDATE charlist SET status = 'Pending' WHERE charID is ?", [icharID])
     conn.commit()
-    await ctx.send(getLang("Delete", "dl_").format(icharID))
+    await ctx.send(getLang("Delete", "DELETE_RECOVERED").format(icharID))
 
 
 def charPermissionCheck(ctx, ownerID):
@@ -1429,7 +1439,7 @@ async def _deleteChar(ctx, charID):
     ownerP = _charExists(charID)
 
     if ownerP is False:
-        await ctx.send(getLang("Delete", "dl_5"))
+        await ctx.send(getLang("Delete", "DELETE_FAILED_BAD_CHARACTER"))
         return
 
     cursor = conn.cursor()
@@ -1439,12 +1449,12 @@ async def _deleteChar(ctx, charID):
         conn.commit()
         await ctx.send(f"Character {charID} has been deleted.")
     else:
-        await ctx.send(getLang("Delete", "dl_6"))
+        await ctx.send(getLang("Delete", "DELETE_FAILED_NOT_OWNER"))
 
 
 def previewChar(cfields=None, prefilled=None, name=None, misc=None):
-    embedVar = discord.Embed(title=getLang("Register", "pr_1"),
-                             description=getLang("Register", "pr_2"), color=0xffD800)
+    embedVar = discord.Embed(title=getLang("Register", "REGISTER_SHOW_PREVIEW_NOID"),
+                             description=getLang("Register", "REGISTER_SHOW_PREVIEW_ID"), color=0xffD800)
 
     if misc:
         cfields["misc"] = misc
@@ -1457,7 +1467,7 @@ def previewChar(cfields=None, prefilled=None, name=None, misc=None):
         if cfields['gender'] != '': embedVar.add_field(name=getLang("Fields", "gender").capitalize() + ':',
                                                        value=cfields[getLang("Fields", 'gender')], inline=False)
         if cfields['abilities/tools'] != '': embedVar.add_field(
-            name=getLang("Fields", "abilities/tools").capitalize() + ':',
+            name=getLang("Fields", "abilities/tools").title() + ':',
             value=cfields[getLang("Fields", 'abilities/tools')], inline=False)
         if cfields['appearance'] != '': embedVar.add_field(name=getLang("Fields", "appearance").capitalize() + ':',
                                                            value=cfields[getLang("Fields", 'appearance')],
@@ -1479,7 +1489,7 @@ def previewChar(cfields=None, prefilled=None, name=None, misc=None):
     return embedVar
 
 
-@bot.command(name=getLang("Commands", "invite"))
+@bot.command(name=getLang("Commands", "CMD_INVITE"))
 async def invite(ctx):
     await ctx.send(getLang("Misc", "invite"))
 
@@ -1508,12 +1518,12 @@ async def _registerChar(ctx, user):
         resmsg = await getdm(ctx)
         resmsg = resmsg.lower()
 
-        if resmsg == getLang("Register", "rg_24"):
-            await user.send(getLang("Register", "rg_19"))
+        if resmsg == getLang("Register", "REGISTER_EXIT"):
+            await user.send(getLang("Register", "REGISTER_ABORTED"))
             currentlyRegistering.remove(user.id)
             isRegistering = False
             return
-        elif resmsg == getLang("Register", "rg_39"):
+        elif resmsg == getLang("Register", "REGISTER_NEXT"):
 
             charcomplete = False
             submitChar = False
@@ -1529,7 +1539,7 @@ async def _registerChar(ctx, user):
                 getLang("Fields", "personality"): None,
             }
 
-            await user.send(getLang("Register", "rg_20"))
+            await user.send(getLang("Register", "REGISTER_ASK_NAME"))
 
             response = await getdm(ctx)
 
@@ -1538,15 +1548,15 @@ async def _registerChar(ctx, user):
 
             cfields[getLang("Fields", "name")] = response
 
-            await user.send(getLang("Register", "rg_21"))
+            await user.send(getLang("Register", "REGISTER_ASK_FIELDS_GENERIC"))
 
             while not charcomplete:
 
                 # MAIN CHARACTER REGISTRATION LOOP
 
                 response = await getdm(ctx)
-                if response.lower() == getLang("Register", "rg_24"):
-                    await user.send(getLang("Register", "rg_19"))
+                if response.lower() == getLang("Register", "REGISTER_EXIT"):
+                    await user.send(getLang("Register", "REGISTER_ABORTED"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
                     return
@@ -1554,7 +1564,7 @@ async def _registerChar(ctx, user):
 
                 if response.lower() == 'done':
                     if not submitChar:
-                        await user.send(getLang("Register", "rg_22"))
+                        await user.send(getLang("Register", "REGISTER_INCOMPLETE"))
                     else:
                         submitChar = True
                         charcomplete = True
@@ -1571,22 +1581,22 @@ async def _registerChar(ctx, user):
                                                person=cfields[getLang("Fields", "personality")],
                                                prefilled=prefilled)
 
-                        await user.send(getLang("Register", "rg_23").format(int(charID)))
+                        await user.send(getLang("Register", "REGISTER_SUCCESS_ID").format(int(charID)))
                         currentlyRegistering.remove(user.id)
                         await alertGMs(ctx, charID)
                         return
-                elif response.lower() == getLang("Register", "rg_24"):
-                    await user.send(getLang("Register", "rg_19"))
+                elif response.lower() == getLang("Register", "REGISTER_EXIT"):
+                    await user.send(getLang("Register", "REGISTER_ABORTED"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
                     return
-                elif response.lower() == getLang("Register", "rg_25"):
+                elif response.lower() == getLang("Register", "REGISTER_VIEW_PREVIEW"):
                     try:
                         await user.send(embed=previewChar(cfields=cfields))
                     except:
-                        await user.send(getLang("Register", "rg_26"))
+                        await user.send(getLang("Register", "REGISTER_PREVIEW_FAILED_LONG"))
                 elif selector in cfields:
-                    await user.send(getLang("Register", "rg_27").format(selector.capitalize()))
+                    await user.send(getLang("Register", "REGISTER_ASK_FIELDS_SPECIFIC").format(selector.capitalize()))
                     response = await getdm(ctx)
 
                     if selector.lower() == getLang("Fields", "name"):
@@ -1594,8 +1604,8 @@ async def _registerChar(ctx, user):
                             break
                             return
 
-                    if response.lower() == getLang("Register", "rg_24"):
-                        await user.send(getLang("Register", "rg_19"))
+                    if response.lower() == getLang("Register", "REGISTER_EXIT"):
+                        await user.send(getLang("Register", "REGISTER_ABORTED"))
                         isRegistering = False
                         currentlyRegistering.remove(user.id)
                         return
@@ -1621,37 +1631,40 @@ async def _registerChar(ctx, user):
                         specifyDone = (specifyDone + "`" + word2.capitalize() + "`, ")
 
                     if not toSpecify:
-                        await user.send(getLang("Register", "rg_28").format(selector.capitalize(), specifyDone))
+                        await user.send(
+                            getLang("Register", "REGISTER_FIELD_CHANGED_COMPLETE").format(selector.capitalize(),
+                                                                                          specifyDone))
                         submitChar = True
                     else:
                         await user.send(
-                            getLang("Register", "rg_29").format(selector.capitalize(), toSpecify, specifyDone))
+                            getLang("Register", "REGISTER_FIELD_CHANGED_INCOMPLETE").format(selector.capitalize(),
+                                                                                            toSpecify, specifyDone))
                 else:
-                    await user.send(getLang("Register", "rg_30"))
+                    await user.send(getLang("Register", "REGISTER_BAD_FIELD"))
 
             return
         elif resmsg == getLang("Fields", "prefilled") and allowPrefilled():
 
             charcomplete = False
 
-            await user.send(getLang("Register", "rg_31"))
+            await user.send(getLang("Register", "REGISTER_PREFILLED_ASK_NAME"))
             response = await getdm(ctx)
 
             if await canonCheck(response, user):
                 return
 
-            if response.lower() == getLang("Register", "rg_24"):
-                await user.send(getLang("Register", "rg_19"))
+            if response.lower() == getLang("Register", "REGISTER_EXIT"):
+                await user.send(getLang("Register", "REGISTER_ABORTED"))
                 isRegistering = False
                 currentlyRegistering.remove(user.id)
                 return
 
             name = response
 
-            await user.send(getLang("Register", "rg_32"))
+            await user.send(getLang("Register", "REGISTER_PREFILLED_ASK_CHARACTER"))
             prefilled = await getdm(ctx)
-            if prefilled.lower() == getLang("Register", "rg_24"):
-                await user.send(getLang("Register", "rg_19"))
+            if prefilled.lower() == getLang("Register", "REGISTER_EXIT"):
+                await user.send(getLang("Register", "REGISTER_ABORTED"))
                 isRegistering = False
                 currentlyRegistering.remove(user.id)
                 return
@@ -1659,12 +1672,12 @@ async def _registerChar(ctx, user):
             charFields = [getLang("Fields", "prefilled"), getLang("Fields", "name")]
 
             while not charcomplete:
-                await user.send(getLang("Register", "rg_33"))
+                await user.send(getLang("Register", "REGISTER_PREFILLED_COMPLETE"))
                 response = await getdm(ctx)
                 selector = response.lower()
 
-                if selector == getLang("Register", "rg_24"):
-                    await user.send(getLang("Register", "rg_19"))
+                if selector == getLang("Register", "REGISTER_EXIT"):
+                    await user.send(getLang("Register", "REGISTER_ABORTED"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
                     return
@@ -1674,39 +1687,39 @@ async def _registerChar(ctx, user):
 
                         charID = await charadd(owner=ctx.author.id, name=name, prefilled=prefilled)
 
-                        await user.send(getLang("Register", "rg_34").format(str(charID)))
+                        await user.send(getLang("Register", "REGISTER_PREFILLED_SUCCESS_ID").format(str(charID)))
                         currentlyRegistering.remove(user.id)
                         await alertGMs(ctx, charID)
                         charcomplete = True
                         return
-                    elif selector == getLang("Register", "rg_25"):
+                    elif selector == getLang("Register", "REGISTER_VIEW_PREVIEW"):
                         try:
                             await user.send(embed=previewChar(prefilled=prefilled, name=name))
                         except:
-                            await user.send(getLang("Register", "rg_26"))
+                            await user.send(getLang("Register", "REGISTER_PREVIEW_FAILED_LONG"))
 
                     else:
-                        await user.send(getLang("Register", "rg_30"))
+                        await user.send(getLang("Register", "REGISTER_BAD_FIELD"))
                 elif selector == getLang("Fields", "name"):
-                    await user.send(getLang("Register", "rg_35"))
+                    await user.send(getLang("Register", "REGISTER_PREFILLED_ASK_NAME_GENERIC"))
                     response = await getdm(ctx)
 
                     if await canonCheck(response, user):
                         return
 
-                    if response.lower() == getLang("Register", "rg_24"):
-                        await user.send(getLang("Register", "rg_19"))
+                    if response.lower() == getLang("Register", "REGISTER_EXIT"):
+                        await user.send(getLang("Register", "REGISTER_ABORTED"))
                         isRegistering = False
                         currentlyRegistering.remove(user.id)
                         return
                     name = response
-                    await user.send(getLang("Register", "rg_36"))
+                    await user.send(getLang("Register", "REGISTER_PREFILLED_NAME_SUCCESS"))
 
                 else:
-                    await user.send(getLang("Register", "rg_32"))
+                    await user.send(getLang("Register", "REGISTER_PREFILLED_ASK_CHARACTER"))
                     response = await getdm(ctx)
-                    if response.lower() == getLang("Register", "rg_24"):
-                        await user.send(getLang("Register", "rg_19"))
+                    if response.lower() == getLang("Register", "REGISTER_EXIT"):
+                        await user.send(getLang("Register", "REGISTER_ABORTED"))
                         isRegistering = False
                         currentlyRegistering.remove(user.id)
                         return
@@ -1714,7 +1727,7 @@ async def _registerChar(ctx, user):
             return
 
         else:
-            await user.send(getLang("Register", "rg_37"))
+            await user.send(getLang("Register", "REGISTER_DIFFERENCES"))
 
 
 #  EVAL COMMAND. - https://gist.github.com/nitros12/2c3c265813121492655bc95aa54da6b9
@@ -1735,7 +1748,7 @@ def insert_returns(body):
         insert_returns(body[-1].body)
 
 
-@bot.command(name=getLang("Commands", "eval"))
+@bot.command(name=getLang("Commands", "CMD_EVAL"))
 @commands.is_owner()
 async def eval_fn(ctx, *, cmd):
     fn_name = "_eval_expr"
@@ -1765,7 +1778,8 @@ async def eval_fn(ctx, *, cmd):
     result = (await eval(f"{fn_name}()", env))
     await ctx.send(result)
 
-@bot.command(name=getLang("Commands", "help"))
+
+@bot.command(name=getLang("Commands", "CMD_HELP"))
 async def help(ctx):
     await ctx.send(getLang("Misc", "help"))
 
@@ -1797,7 +1811,7 @@ async def autoBackup():
         await runBackup()
 
 
-@bot.command(name=getLang("Commands", "fbackup"))
+@bot.command(name=getLang("Commands", "CMD_FORCE_BACKUP"))
 @commands.is_owner()
 async def _forceBackup(ctx):
     await runBackup()
@@ -1873,30 +1887,30 @@ async def statusChanger():
 
 ## Other ##
 
-@bot.command(name=getLang("Commands", "send"))
+@bot.command(name=getLang("Commands", "CMD_SEND_WEBHOOK"))
 async def send(ctx, id, *, message: str):
     charData = _getCharDict(id)
     if charData == 'INVALID CHARACTER':
         try:
-            await ctx.author.send(getLang("Send", "sn_1"))
+            await ctx.author.send(getLang("Send", "SEND_FAILED_BAD_CHARACTER"))
         except Exception as e:
-            await logMSG(getLang("Send", "sn_2").format(ctx.author, ctx.author.id, e))
+            await logMSG(getLang("Send", "SEND_FAILED_LOG").format(ctx.author, ctx.author.id, e))
         await ctx.message.delete()
         return
 
     if ctx.author.id != int(charData["owner"]):
         try:
-            await ctx.author.send(getLang("Send", "sn_3"))
+            await ctx.author.send(getLang("Send", "SEND_FAILED_NOT_OWNER"))
         except Exception as e:
-            await logMSG(getLang("Send", "sn_2").format(ctx.author, ctx.author.id, e))
+            await logMSG(getLang("Send", "SEND_FAILED_LOG").format(ctx.author, ctx.author.id, e))
         await ctx.message.delete()
         return
 
-    if charData[getLang("Fields", "status")] != getLang("Status", "conv_st_1"):
+    if charData[getLang("Fields", "status")] != getLang("Status", "STATUS_APPROVED"):
         try:
-            await ctx.author.send(getLang("Send", "sn_4"))
+            await ctx.author.send(getLang("Send", "SEND_FAILED_NOT_APPROVED"))
         except Exception as e:
-            await logMSG(getLang("Send", "sn_2").format(ctx.author, ctx.author.id, e))
+            await logMSG(getLang("Send", "SEND_FAILED_LOG").format(ctx.author, ctx.author.id, e))
         await ctx.message.delete()
         return
 
@@ -1905,19 +1919,20 @@ async def send(ctx, id, *, message: str):
 
     # Checks if in MRC and applies MRC nickname instead.
 
-    if (ctx.channel.name).lower() == getLang("Send", "sn_6") and getLang("Send", "sn_6").casefold() in (i.casefold() for
-                                                                                                        i in portJS):
+    if (ctx.channel.name).lower() == getLang("Send", "SEND_MRC") and getLang("Send", "SEND_MRC").casefold() in (
+    i.casefold() for
+    i in portJS):
         i_l = {}
         for i in portJS:
             i_l[i.lower()] = portJS[i]
-        name = i_l[getLang("Send", "sn_6")]
+        name = i_l[getLang("Send", "SEND_MRC")]
     else:
         name = charData[getLang("Fields", "name")]
 
     name = name[0:80]
 
-    if getLang("Send", "sn_5").lower().capitalize() in portJS:
-        custom_img = portJS[getLang("Send", "sn_5")]
+    if getLang("Send", "SEND_PORTRAIT").lower().capitalize() in portJS:
+        custom_img = portJS[getLang("Send", "SEND_PORTRAIT")]
 
     await webhook_manager.send(ctx, name, message, custom_img)
 
