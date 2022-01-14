@@ -748,7 +748,7 @@ async def custom_Register(ctx, user, misc):
         field = await getdm(ctx)
         if field.lower() == getLang("Send", "SEND_MRC"):
             field = field.upper()
-        elif field.lower().capitalize() == getLang("Send", "sn_5"):
+        elif field.lower().capitalize() == getLang("Send", "SEND_PORTRAIT"):
             field = field.lower().capitalize()
         elif field.lower() == 'done':
             isFinished = True
@@ -986,7 +986,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                 for name, value in customFields.items():
                     print(name, value)
                     valid = validators.url(value)
-                    if name.lower().capitalize() == getLang("Send", "sn_5") and valid == True:
+                    if name.lower().capitalize() == getLang("Send", "SEND_PORTRAIT") and valid == True:
                         embedVar.set_image(url=value)
                         hasImg = True
                     else:
@@ -1155,7 +1155,7 @@ def _setSQL(charID, field, content):
 async def _custom(ctx, charID='', field='', *, message: str):
     alertChannel = bot.get_channel(LogChannel())
 
-    if field.lower().capitalize() == getLang("Send", "sn_5"):
+    if field.lower().capitalize() == getLang("Send", "SEND_PORTRAIT"):
         field = field.lower().capitalize()
     elif field.lower() == getLang("Send", "SEND_MRC"):
         field = field.upper()
