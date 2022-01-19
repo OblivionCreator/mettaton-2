@@ -1726,7 +1726,7 @@ async def _registerChar(ctx, user):
             return
 
         else:
-            await user.send(getLang("Register", "REGISTER_DIFFERENCES"))
+            await user.send(getLang("Register", "REGISTER_DIFFERENCE"))
 
 
 #  EVAL COMMAND. - https://gist.github.com/nitros12/2c3c265813121492655bc95aa54da6b9
