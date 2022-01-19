@@ -1241,6 +1241,10 @@ async def getUserChars(ctx, userID, pageSize, pageID):
 
 @bot.command(name=getLang("Commands", "CMD_LIST"))
 async def _list(ctx, pageIdentifier='', page=''):
+    if not page.isnumeric() and page != '':
+        await ctx.send(f"{page} is not a valid page!")
+        return
+
     '''Shows a list of all characters, sorted into pages of 15 Characters.
     Mentioning a user or user ID will bring up all characters belonging to that user.
 
@@ -1324,17 +1328,12 @@ async def _search(ctx, selector='', extra1='', extra2=''):
         return
 
     if (ctx.message.mentions):
-        if extra1.isnumeric():
-            extratemp = extra1
-            extra1 = str(ctx.message.mentions[0].id)
-            extra2 = extratemp
-        else:
-            extra1 = str(ctx.message.mentions[0].id)
+        await _list(ctx, selector, extra1)
+        return
 
     Sfield = False
 
     if selector.lower() in fields:
-
         fieldFinal = convertField(selector.lower())
 
         if extra2.isnumeric():
@@ -1361,7 +1360,7 @@ async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
     count = cur.fetchone()[0]
 
     sql = f'''SELECT charid, owner, name FROM charlist WHERE {field} LIKE ? AND status IS NOT 'Disabled' LIMIT 25 OFFSET ?'''
-    cur.execute(sql, ['%' + search + '%', (25 * pageNo)])
+    cur.execute(sql, ['%' + search + '%', (15 * pageNo)])
 
     charList = [CharacterListItem(id=charID, name=name, owner=owner) for charID, owner, name in cur]
 
