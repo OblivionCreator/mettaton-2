@@ -1241,7 +1241,7 @@ async def getUserChars(ctx, userID, pageSize, pageID):
 
 @bot.command(name=getLang("Commands", "CMD_LIST"))
 async def _list(ctx, pageIdentifier='', page=''):
-    if not page.isnumeric() and page != '':
+    if not page.isnumeric() and page != '' and not ctx.message.mentions:
         await ctx.send(f"{page} is not a valid page!")
         return
 
