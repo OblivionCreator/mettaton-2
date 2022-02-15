@@ -610,14 +610,14 @@ async def reRegister(ctx, charID):
 
     owner = charData[getLang("Fields", "owner")]
     status = charData[getLang("Fields", "status")]
-    cfields[getLang("Fields", "name")] = charData["name"]
-    cfields[getLang("Fields", "age")] = charData["age"]
-    cfields[getLang("Fields", "gender")] = charData["gender"]
-    cfields[getLang("Fields", "abilities/tools")] = charData["abilities/tools"]
-    cfields[getLang("Fields", "appearance")] = charData["appearance"]
-    cfields[getLang("Fields", "background")] = charData["background"]
-    cfields[getLang("Fields", "personality")] = charData["personality"]
-    cfields[getLang("Fields", "prefilled")] = charData["prefilled"]
+    cfields[getLang("Fields", "name")] = charData[getLang("Fields", "name")]
+    cfields[getLang("Fields", "age")] = charData[getLang("Fields", "age")]
+    cfields[getLang("Fields", "gender")] = charData[getLang("Fields", "gender")]
+    cfields[getLang("Fields", "abilities/tools")] = charData[getLang("Fields", "abilities/tools")]
+    cfields[getLang("Fields", "appearance")] = charData[getLang("Fields", "appearance")]
+    cfields[getLang("Fields", "background")] = charData[getLang("Fields", "background")]
+    cfields[getLang("Fields", "personality")] = charData[getLang("Fields", "personality")]
+    cfields[getLang("Fields", "prefilled")] = charData[getLang("Fields", "prefilled")]
     cfields["misc"] = charData["misc"]
 
     embedV = await _view(ctx, charID, dmchannel=True, returnEmbed=True)
@@ -664,6 +664,8 @@ async def reRegister(ctx, charID):
             else:
                 fullList.append(i)
 
+        fullList.remove('misc')
+
         if not allowPrefilled():
             if getLang("Fields", "prefilled") in blankList:
                 blankList.remove(getLang("Fields", "prefilled"))
@@ -689,7 +691,10 @@ async def reRegister(ctx, charID):
         elif selector == getLang("Fields", "prefilled") and selector not in fullList and not allowPrefilled():
             await user.send(getLang("Register", "REGISTER_BAD_FIELD"))
         elif selector in cfields:
-            await user.send(getLang("Register", "REGISTER_FIELD_INPUT").format(selector.capitalize()))
+            warn = ''
+            if selector == 'misc':
+                warn = getLang("Register", "REGISTER_MISC_WARNING")
+            await user.send(f'{getLang("Register", "REGISTER_FIELD_INPUT").format(selector.capitalize())}{warn}')
             tempField = await getdm(ctx)
             if selector == getLang("Fields", "name"):
                 if await canonCheck(tempField, ctx.author):
