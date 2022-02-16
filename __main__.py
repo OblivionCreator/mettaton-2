@@ -44,7 +44,7 @@ else:
 gauth.SaveCredentialsFile("credentials.txt")
 
 drive = GoogleDrive(gauth)
-
+pageSize = 20
 
 
 def getConfig():
@@ -1250,14 +1250,13 @@ async def _list(ctx, pageIdentifier='', page=''):
         await ctx.send(f"{page} is not a valid page!")
         return
 
-    '''Shows a list of all characters, sorted into pages of 15 Characters.
+    '''Shows a list of all characters, sorted into pages of 20 Characters.
     Mentioning a user or user ID will bring up all characters belonging to that user.
 
     USAGE:
     rp!list <PAGE>
     rp!list <MENTION|USER ID> <PAGE>'''
 
-    pageSize = 15
     if pageIdentifier.isnumeric():
         pageNo = int(pageIdentifier) - 1
     else:
@@ -1364,8 +1363,8 @@ async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
     cur.execute(sqlC, ['%' + search + '%'])
     count = cur.fetchone()[0]
 
-    sql = f'''SELECT charid, owner, name FROM charlist WHERE {field} LIKE ? AND status IS NOT 'Disabled' LIMIT 25 OFFSET ?'''
-    cur.execute(sql, ['%' + search + '%', (15 * pageNo)])
+    sql = f'''SELECT charid, owner, name FROM charlist WHERE {field} LIKE ? AND status IS NOT 'Disabled' LIMIT ? OFFSET ?'''
+    cur.execute(sql, ['%' + search + '%', pageSize, (pageSize * pageNo)])
 
     charList = [CharacterListItem(id=charID, name=name, owner=owner) for charID, owner, name in cur]
 
@@ -1380,7 +1379,7 @@ async def _sqlSearch(ctx, rawR, field=None, search='', pageNo=0):
                                                                   member or i.owner) + '\n'
 
     await ctx.send(
-        f'{getLang("Search", "SEARCH_LIST_MATCHING").format(pageNo + 1, math.ceil(count / 25))} \n{charListStr}')
+        f'{getLang("Search", "SEARCH_LIST_MATCHING").format(pageNo + 1, math.ceil(count / pageSize))} \n{charListStr}')
 
 
 @bot.command(name=getLang("Commands", "CMD_DELETE"))
