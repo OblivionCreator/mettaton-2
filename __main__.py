@@ -78,7 +78,7 @@ def configFields():
     curConfig = {
         'gmchannel': 0,
         'logchannel': 0,
-        'autobackup': 0,
+        'autobackup': False,
         'language': 'translation/lang_en.ini',
         'denylist': [],
         'allowprefilled': True
@@ -293,7 +293,9 @@ def delDeny(term):
 async def on_ready():
     await configLoader()
     changeStatus.start()
-    autoBackup.start()
+
+    if doBackup():
+        autoBackup.start()
 
 def create_connection(db_file):
     conn = None
@@ -1817,7 +1819,10 @@ async def autoBackup():
 @bot.command(name=getLang("Commands", "CMD_FORCE_BACKUP"))
 @commands.is_owner()
 async def _forceBackup(ctx):
-    await runBackup()
+    if doBackup():
+        await runBackup()
+    else:
+        await ctx.send(getLang("Misc", "MISC_BACKUP_DISABLED"))
 
 
 async def runBackup():
