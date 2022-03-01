@@ -3,10 +3,10 @@ import math
 import os
 import random
 from pathlib import Path
-from discord.ext import tasks
+from disnake.ext import tasks
 from datetime import datetime
-import discord
-from discord.ext import commands
+import disnake as discord
+from disnake.ext import commands
 import sqlite3
 from sqlite3 import Error
 from collections.abc import Sequence
@@ -14,10 +14,8 @@ import ast
 from dataclasses import dataclass
 import time
 import json
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-from discord import HTTPException
-from discord.utils import get
+from disnake import HTTPException
+from disnake.utils import get
 from configparser import ConfigParser
 from resources import getdiff, webhook_manager
 import validators
@@ -26,24 +24,6 @@ intents = discord.Intents.default()
 intents.members = True
 
 backupOngoing = False
-
-gauth = GoogleAuth()
-gauth.LoadCredentialsFile("credentials.txt")
-if gauth.credentials is None:
-
-    gauth.GetFlow()
-    gauth.flow.params.update({'access_type': 'offline'})
-    gauth.flow.params.update({'approval_prompt': 'force'})
-
-    gauth.LocalWebserverAuth()
-
-elif gauth.access_token_expired:
-    gauth.Refresh()
-else:
-    gauth.Authorize()
-gauth.SaveCredentialsFile("credentials.txt")
-
-drive = GoogleDrive(gauth)
 pageSize = 20
 
 
@@ -162,10 +142,34 @@ def doBackup():
     return int(conf["autobackup"])
 
 
+if doBackup():
+    from pydrive.auth import GoogleAuth
+    from pydrive.drive import GoogleDrive
+
+    gauth = GoogleAuth()
+    gauth.LoadCredentialsFile("credentials.txt")
+    if gauth.credentials is None:
+
+        gauth.GetFlow()
+        gauth.flow.params.update({'access_type': 'offline'})
+        gauth.flow.params.update({'approval_prompt': 'force'})
+
+        gauth.LocalWebserverAuth()
+
+    elif gauth.access_token_expired:
+        gauth.Refresh()
+    else:
+        gauth.Authorize()
+    gauth.SaveCredentialsFile("credentials.txt")
+
+    drive = GoogleDrive(gauth)
+
+
 def allowPrefilled():
     conf = getConfig()
     print(bool(conf["allowprefilled"]))
     return bool(conf["allowprefilled"])
+
 
 async def getdm(ctx):
     response = await bot.wait_for('message', check=message_check(channel=ctx.author.dm_channel))
@@ -289,6 +293,7 @@ def delDeny(term):
 
     return True
 
+
 @bot.event
 async def on_ready():
     await configLoader()
@@ -296,6 +301,7 @@ async def on_ready():
 
     if doBackup():
         autoBackup.start()
+
 
 def create_connection(db_file):
     conn = None
@@ -1516,7 +1522,6 @@ async def canonCheck(response, user):
 
 
 async def _registerChar(ctx, user):
-
     isRegistering = True
 
     while isRegistering:
@@ -1788,6 +1793,7 @@ async def eval_fn(ctx, *, cmd):
 async def help(ctx):
     await ctx.send(getLang("Misc", "help"))
 
+
 ## Log Handling ##
 
 async def logHandler(message):
@@ -1928,8 +1934,8 @@ async def send(ctx, id, *, message: str):
     # Checks if in MRC and applies MRC nickname instead.
 
     if (ctx.channel.name).lower() == getLang("Send", "SEND_MRC") and getLang("Send", "SEND_MRC").casefold() in (
-    i.casefold() for
-    i in portJS):
+            i.casefold() for
+            i in portJS):
         i_l = {}
         for i in portJS:
             i_l[i.lower()] = portJS[i]
