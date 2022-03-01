@@ -969,8 +969,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
         member = ctx.message.guild.get_member(int(charData[getLang("Fields", "owner")]))
 
         embedVar = discord.Embed(title=getLang("View", "VIEW_CHARACTER_ID").format(sanID),
-                                 description=getLang("View", "VIEW_REGISTER_ID").format(sanID), color=color,
-                                 inline=False)
+                                 description=getLang("View", "VIEW_REGISTER_ID").format(sanID), color=color)
 
         noDisplay = ['charID', 'misc', getLang("Fields", "owner")]
 
