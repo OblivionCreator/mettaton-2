@@ -225,6 +225,7 @@ async def update_deny(ctx, act, term=''):
 
         if term == '':
             await ctx.send(getLang("DenyList", "DENYLIST_FAILED_NO_TERMS"))
+            return
 
         addSt = addDeny(term)
         if addSt == False:
