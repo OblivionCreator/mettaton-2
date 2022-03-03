@@ -19,6 +19,7 @@ from disnake.utils import get
 from configparser import ConfigParser
 from resources import getdiff, webhook_manager
 import validators
+import re
 
 intents = discord.Intents.default()
 intents.members = True
@@ -1507,6 +1508,10 @@ async def invite(ctx):
 async def canonCheck(response, user):
     global canonDeny
     response = response.lower()
+
+    response = re.sub(r'[\W_]+', '', response)
+
+    print(response)
 
     if any(canon_char in response for canon_char in getDenyList()):  # Thanks Atlas!
         await user.send(getLang("Misc", "autodeny"))
