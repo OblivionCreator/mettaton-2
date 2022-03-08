@@ -1106,8 +1106,16 @@ def _getCharDict(charID=0):
 
 
 @bot.command(name=getLang("Commands", "CMD_SET"), aliases=['setprop'])
-async def _set(ctx, charID, field, *, message: str):
+async def _set(ctx, charID='', field='', *, message: str = ''):
     alertChannel = bot.get_channel(LogChannel())
+
+    if charID == '' or field == '':
+        if charID == '':
+            text = getLang("Set", "SET_FAILED_NO_ID")
+        else:
+            text = getLang("Set", "SET_FAILED_NO_FIELD")
+        await ctx.send(getLang("Set", "SET_FAILED_INVALID_DATA").format(text))
+        return
 
     if field.lower() in fields:
         fSan = convertField(field.lower())
