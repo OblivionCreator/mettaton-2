@@ -725,8 +725,8 @@ async def reRegister(ctx, charID):
                                        person=cfields[getLang("Fields", "personality")],
                                        prefilled=cfields[getLang("Fields", "prefilled")], misc=misc, ctx=ctx)
                 await user.send(getLang("Register", "REGISTER_PREVIEW_LONG"), file=discord.File(previewTxt))
-        elif selector.lower() == getLang("Register", "REGISTER_COMPLETE"):
-            await user.send(getLang("Register", "REGISTER_SUBMISSION").format(charID))
+        elif selector.lower() == getLang("Register", "REGISTER_COMPLETE") or selector.lower() == getLang("Register",
+                                                                                                         "REGISTER_STORE"):
             oldchr = _getCharDict(charID=charID)
             resub = await charadd(owner=owner, name=cfields[getLang("Fields", "name")],
                                   age=cfields[getLang("Fields", "age")],
@@ -737,6 +737,7 @@ async def reRegister(ctx, charID):
                                   person=cfields[getLang("Fields", "personality")],
                                   prefilled=cfields[getLang("Fields", "prefilled")], charID=charID, misc=misc)
             await alertGMs(ctx, charID, resub=True, old=oldchr)
+            await user.send(getLang("Register", "REGISTER_SUBMISSION").format(charID))
             registerLoop = False
             return
         elif selector == getLang("Register", "REGISTER_EXIT"):
@@ -1522,7 +1523,7 @@ async def canonCheck(response, user):
 
     print(response)
 
-    if any(canon_char in response for canon_char in getDenyList()):  # Thanks Atlas!
+    if any(canon_char in response for canon_char in getDenyList()):  # Thanks, Atlas!
         await user.send(getLang("Misc", "autodeny"))
 
         logChannel = bot.get_channel(LogChannel())
@@ -1585,7 +1586,8 @@ async def _registerChar(ctx, user):
                     return
                 selector = response.lower()
 
-                if response.lower() == 'done':
+                if response.lower() == getLang("Register", "REGISTER_COMPLETE") or response.lower() == getLang(
+                        "Register", "REGISTER_STORE"):
                     if not submitChar:
                         await user.send(getLang("Register", "REGISTER_INCOMPLETE"))
                     else:
@@ -1595,8 +1597,14 @@ async def _registerChar(ctx, user):
                         owner = ctx.author.id
                         prefilled = None
 
+                        if response.lower() == getLang("Register", "REGISTER_STORE"):
+                            charStatus = getLang("Status", "STATUS_DENIED")
+                        else:
+                            charStatus = None
+
                         charID = await charadd(owner=owner, name=cfields[getLang("Fields", "name")],
                                                age=cfields[getLang("Fields", "age")],
+                                               status=charStatus,
                                                gender=cfields[getLang("Fields", "gender")],
                                                abil=cfields[getLang("Fields", "abilities/tools")],
                                                appear=cfields[getLang("Fields", "appearance")],
@@ -1604,9 +1612,13 @@ async def _registerChar(ctx, user):
                                                person=cfields[getLang("Fields", "personality")],
                                                prefilled=prefilled)
 
-                        await user.send(getLang("Register", "REGISTER_SUCCESS_ID").format(int(charID)))
                         currentlyRegistering.remove(user.id)
-                        await alertGMs(ctx, charID)
+
+                        if response.lower() == getLang("Register", "REGISTER_COMPLETE"):
+                            await user.send(getLang("Register", "REGISTER_SUCCESS_ID").format(int(charID)))
+                            await alertGMs(ctx, charID)
+                        else:
+                            await user.send(getLang("Register", "REGISTER_SUCCESS_STORE").format(int(charID)))
                         return
                 elif response.lower() == getLang("Register", "REGISTER_EXIT"):
                     await user.send(getLang("Register", "REGISTER_ABORTED"))
@@ -1706,7 +1718,7 @@ async def _registerChar(ctx, user):
                     return
 
                 if selector not in charFields:
-                    if selector == 'done':
+                    if selector == getLang("Register", "REGISTER_COMPLETE"):
 
                         charID = await charadd(owner=ctx.author.id, name=name, prefilled=prefilled)
 
@@ -1756,7 +1768,7 @@ async def _registerChar(ctx, user):
 #  EVAL COMMAND. - https://gist.github.com/nitros12/2c3c265813121492655bc95aa54da6b9
 
 def insert_returns(body):
-    # insert return stmt if the last expression is a expression statement
+    # insert return stmt if the last expression is an expression statement
     if isinstance(body[-1], ast.Expr):
         body[-1] = ast.Return(body[-1].value)
         ast.fix_missing_locations(body[-1])
