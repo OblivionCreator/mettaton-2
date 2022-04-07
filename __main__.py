@@ -1600,7 +1600,7 @@ async def _registerChar(ctx, user):
                         if response.lower() == getLang("Register", "REGISTER_STORE"):
                             charStatus = getLang("Status", "STATUS_DENIED")
                         else:
-                            charStatus = None
+                            charStatus = getLang("Status", "STATUS_PENDING")
 
                         charID = await charadd(owner=owner, name=cfields[getLang("Fields", "name")],
                                                age=cfields[getLang("Fields", "age")],
