@@ -1579,14 +1579,15 @@ async def _registerChar(ctx, user):
                 # MAIN CHARACTER REGISTRATION LOOP
 
                 response = await getdm(ctx)
-                if response.lower() == getLang("Register", "REGISTER_EXIT"):
+                selector = response.lower()
+
+                if selector == getLang("Register", "REGISTER_EXIT"):
                     await user.send(getLang("Register", "REGISTER_ABORTED"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
                     return
-                selector = response.lower()
 
-                if response.lower() == getLang("Register", "REGISTER_COMPLETE") or response.lower() == getLang(
+                if selector == getLang("Register", "REGISTER_COMPLETE") or response.lower() == getLang(
                         "Register", "REGISTER_STORE"):
                     if not submitChar:
                         await user.send(getLang("Register", "REGISTER_INCOMPLETE"))
@@ -1597,7 +1598,7 @@ async def _registerChar(ctx, user):
                         owner = ctx.author.id
                         prefilled = None
 
-                        if response.lower() == getLang("Register", "REGISTER_STORE"):
+                        if selector == getLang("Register", "REGISTER_STORE"):
                             charStatus = getLang("Status", "STATUS_DENIED")
                         else:
                             charStatus = getLang("Status", "STATUS_PENDING")
@@ -1614,18 +1615,18 @@ async def _registerChar(ctx, user):
 
                         currentlyRegistering.remove(user.id)
 
-                        if response.lower() == getLang("Register", "REGISTER_COMPLETE"):
+                        if selector == getLang("Register", "REGISTER_COMPLETE"):
                             await user.send(getLang("Register", "REGISTER_SUCCESS_ID").format(int(charID)))
                             await alertGMs(ctx, charID)
                         else:
                             await user.send(getLang("Register", "REGISTER_SUCCESS_STORE").format(int(charID)))
                         return
-                elif response.lower() == getLang("Register", "REGISTER_EXIT"):
+                elif selector == getLang("Register", "REGISTER_EXIT"):
                     await user.send(getLang("Register", "REGISTER_ABORTED"))
                     isRegistering = False
                     currentlyRegistering.remove(user.id)
                     return
-                elif response.lower() == getLang("Register", "REGISTER_VIEW_PREVIEW"):
+                elif selector == getLang("Register", "REGISTER_VIEW_PREVIEW"):
                     try:
                         await user.send(embed=previewChar(cfields=cfields))
                     except:
@@ -1634,12 +1635,12 @@ async def _registerChar(ctx, user):
                     await user.send(getLang("Register", "REGISTER_ASK_FIELDS_SPECIFIC").format(selector.capitalize()))
                     response = await getdm(ctx)
 
-                    if selector.lower() == getLang("Fields", "name"):
+                    if selector == getLang("Fields", "name"):
                         if await canonCheck(response, user):
                             break
                             return
 
-                    if response.lower() == getLang("Register", "REGISTER_EXIT"):
+                    if selector == getLang("Register", "REGISTER_EXIT"):
                         await user.send(getLang("Register", "REGISTER_ABORTED"))
                         isRegistering = False
                         currentlyRegistering.remove(user.id)

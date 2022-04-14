@@ -13,7 +13,7 @@ async def send(ctx, name, message, custom_img=None):
     elif custom_img:
         img = custom_img
     else:
-        img = ctx.author.avatar_url
+        img = ctx.author.display_avatar
 
     channel = ctx.message.channel
 
