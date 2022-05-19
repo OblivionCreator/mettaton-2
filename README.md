@@ -2,7 +2,7 @@
 
 PREREQUISITES:
 
-discord.py 1.6.0 or higher - Runs the bot<br>
+disnake 2.4.x or higher - Runs the bot<br>
 pyDrive - Runs automated backups every 24hr
 
 FILES YOU NEED TO PROVIDE TO GET BOT TO FUNCTION:
