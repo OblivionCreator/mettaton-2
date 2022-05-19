@@ -23,8 +23,7 @@ import re
 
 intents = discord.Intents.default()
 intents.members = True
-intents.messages = True
-
+intents.message_content = True
 backupOngoing = False
 pageSize = 20
 
