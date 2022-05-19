@@ -23,6 +23,7 @@ import re
 
 intents = discord.Intents.default()
 intents.members = True
+intents.messages = True
 
 backupOngoing = False
 pageSize = 20
@@ -140,7 +141,7 @@ def LogChannel():
 
 def doBackup():
     conf = getConfig()
-    return int(conf["autobackup"])
+    return bool(conf["autobackup"])
 
 
 if doBackup():
