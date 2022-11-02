@@ -3,10 +3,10 @@ import math
 import os
 import random
 from pathlib import Path
-from disnake.ext import tasks
+from discord.ext import tasks
 from datetime import datetime
-import disnake as discord
-from disnake.ext import commands
+import discord as discord
+from discord.ext import commands
 import sqlite3
 from sqlite3 import Error
 from collections.abc import Sequence
@@ -14,8 +14,8 @@ import ast
 from dataclasses import dataclass
 import time
 import json
-from disnake import HTTPException
-from disnake.utils import get
+from discord import HTTPException
+from discord.utils import get
 from configparser import ConfigParser
 from resources import getdiff, webhook_manager
 import validators
@@ -26,7 +26,6 @@ intents.members = True
 intents.message_content = True
 backupOngoing = False
 pageSize = 20
-
 
 def getConfig():
     try:
@@ -103,7 +102,7 @@ async def configLoader():
 
     except (FileNotFoundError, IOError):
 
-        print(getLang("Log", "lg_5"))
+        print(".config File not found! Creating the Config...")
 
         file = open('.config', 'x')
 
@@ -113,7 +112,8 @@ async def configLoader():
 
         file.write(cfgJson)
 
-        print(getLang("Log", "lg_6"))
+        print("Config File has been created!\nTo set the GM Channel, type rp!setgmchannel in the specified channel.\nTo set the logging channel, type rp!setlogchannel in the specified channel.")
+
 
 
 cst_prefix = getLang("Commands", "CMD_PREFIX")
@@ -126,7 +126,6 @@ bot = commands.Bot(
 bot.remove_command("help")
 guild_ids = [770428394918641694]
 currentlyRegistering = []
-
 
 def GMChannel():
     conf = getConfig()
@@ -142,8 +141,8 @@ def doBackup():
     conf = getConfig()
     return bool(conf["autobackup"])
 
-
-if doBackup():
+def backup_init():
+    global drive
     from pydrive.auth import GoogleAuth
     from pydrive.drive import GoogleDrive
 
@@ -300,10 +299,9 @@ def delDeny(term):
 async def on_ready():
     await configLoader()
     changeStatus.start()
-
     if doBackup():
+        backup_init()
         autoBackup.start()
-
 
 def create_connection(db_file):
     conn = None
@@ -1824,7 +1822,8 @@ async def help(ctx):
 
 async def logHandler(message):
     channel = bot.get_channel(LogChannel())
-    await channel.send(message)
+    if channel:
+        await channel.send(message)
 
 
 async def getLogChannel():
@@ -1856,6 +1855,29 @@ async def _forceBackup(ctx):
     else:
         await ctx.send(getLang("Misc", "MISC_BACKUP_DISABLED"))
 
+@bot.event
+async def on_message(message):
+    if message.content.startswith('$'):
+        full_content = message.content[1:]
+        if len(full_content) == 0:
+            return
+        name_split = full_content.split(':')
+        name = f'%{name_split[0]}%'
+        name_split.pop(0)
+        content = ':'.join(name_split)
+        if len(content) == 0 or len(name) == 2:
+            return
+        sql = '''SELECT charID FROM charlist WHERE owner IS ? AND status IS ? AND name LIKE ?'''
+        cur = conn.cursor()
+        cur.execute(sql,[message.author.id,'Approved', name])
+        temp = cur.fetchone()
+        if not temp:
+            await message.author.send(getLang('Send', 'SEND_FAILED_NO_CHARS').format(name[1:-1]))
+            return
+        id, = temp
+        await send(message, id=id, message=content)
+    else:
+        await bot.process_commands(message)
 
 async def runBackup():
     global database

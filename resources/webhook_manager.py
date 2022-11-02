@@ -1,25 +1,30 @@
 import json
 import aiohttp
-from discord import Webhook, AsyncWebhookAdapter
+import discord.ext.commands
+from discord import Webhook
 import validators
 
 c_webhooks = []
 
 
 async def send(ctx, name, message, custom_img=None):
-    if ctx.message.attachments:
-        attachment = ctx.message.attachments[0]
+    if isinstance(ctx, discord.ext.commands.Context):
+        message_obj = ctx.message
+    elif isinstance(ctx, discord.Message):
+        message_obj = ctx
+    if message_obj.attachments:
+        attachment = message_obj.attachments[0]
         img = attachment.url
     elif custom_img:
         img = custom_img
     else:
-        img = ctx.author.display_avatar
+        img = message_obj.author.display_avatar
 
-    channel = ctx.message.channel
+    channel = message_obj.channel
 
     await sendWH(name=name, img=img, message=message, channel=channel, author=ctx.author)
     try:
-        await ctx.message.delete()
+        await message_obj.delete()
     except Exception as e:
         print(f"Unable to delete message due to exception:\n{e}")
 
@@ -30,11 +35,10 @@ async def sendWH(name, img, message, channel, author):
     c_webhooks = getWebhookCache()
 
     async with aiohttp.ClientSession() as session:
-
         if c_webhooks:
             for c, w in c_webhooks:
                 if c == channel.id:
-                    webhook = Webhook.from_url(w, adapter=AsyncWebhookAdapter(session))
+                    webhook = Webhook.from_url(w, session=session)
                     print("Webhook Found!")
                     continue
         else:
