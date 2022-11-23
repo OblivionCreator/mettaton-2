@@ -27,6 +27,7 @@ intents.message_content = True
 backupOngoing = False
 pageSize = 20
 
+
 def getConfig():
     try:
         with open('.config', 'r') as file:
@@ -112,8 +113,8 @@ async def configLoader():
 
         file.write(cfgJson)
 
-        print("Config File has been created!\nTo set the GM Channel, type rp!setgmchannel in the specified channel.\nTo set the logging channel, type rp!setlogchannel in the specified channel.")
-
+        print(
+            "Config File has been created!\nTo set the GM Channel, type rp!setgmchannel in the specified channel.\nTo set the logging channel, type rp!setlogchannel in the specified channel.")
 
 
 cst_prefix = getLang("Commands", "CMD_PREFIX")
@@ -126,6 +127,7 @@ bot = commands.Bot(
 bot.remove_command("help")
 guild_ids = [770428394918641694]
 currentlyRegistering = []
+
 
 def GMChannel():
     conf = getConfig()
@@ -140,6 +142,7 @@ def LogChannel():
 def doBackup():
     conf = getConfig()
     return bool(conf["autobackup"])
+
 
 def backup_init():
     global drive
@@ -302,6 +305,7 @@ async def on_ready():
     if doBackup():
         backup_init()
         autoBackup.start()
+
 
 def create_connection(db_file):
     conn = None
@@ -1855,6 +1859,7 @@ async def _forceBackup(ctx):
     else:
         await ctx.send(getLang("Misc", "MISC_BACKUP_DISABLED"))
 
+
 @bot.event
 async def on_message(message):
     if message.content.startswith('$'):
@@ -1869,15 +1874,20 @@ async def on_message(message):
             return
         sql = '''SELECT charID FROM charlist WHERE owner IS ? AND status IS ? AND name LIKE ?'''
         cur = conn.cursor()
-        cur.execute(sql,[message.author.id,'Approved', name])
+        cur.execute(sql, [message.author.id, 'Approved', name])
         temp = cur.fetchone()
         if not temp:
-            await message.author.send(getLang('Send', 'SEND_FAILED_NO_CHARS').format(name[1:-1]))
-            return
+            if message.channel.category.name.lower() == 'the void':
+                await send(message, id=None, message=content, raw_name=name[1:-1])
+                return
+            else:
+                await message.author.send(getLang('Send', 'SEND_FAILED_NO_CHARS').format(name[1:-1]))
+                return
         id, = temp
         await send(message, id=id, message=content)
     else:
         await bot.process_commands(message)
+
 
 async def runBackup():
     global database
@@ -1950,51 +1960,56 @@ async def statusChanger():
 ## Other ##
 
 @bot.command(name=getLang("Commands", "CMD_SEND_WEBHOOK"))
-async def send(ctx, id, *, message: str):
-    charData = _getCharDict(id)
-    if charData == 'INVALID CHARACTER':
-        try:
-            await ctx.author.send(getLang("Send", "SEND_FAILED_BAD_CHARACTER"))
-        except Exception as e:
-            await logMSG(getLang("Send", "SEND_FAILED_LOG").format(ctx.author, ctx.author.id, e))
-        await ctx.message.delete()
-        return
+async def send(ctx, id, *, message: str, raw_name=None):
 
-    if ctx.author.id != int(charData["owner"]):
-        try:
-            await ctx.author.send(getLang("Send", "SEND_FAILED_NOT_OWNER"))
-        except Exception as e:
-            await logMSG(getLang("Send", "SEND_FAILED_LOG").format(ctx.author, ctx.author.id, e))
-        await ctx.message.delete()
-        return
+    if id:
+        charData = _getCharDict(id)
+        if charData == 'INVALID CHARACTER':
+            try:
+                await ctx.author.send(getLang("Send", "SEND_FAILED_BAD_CHARACTER"))
+            except Exception as e:
+                await logMSG(getLang("Send", "SEND_FAILED_LOG").format(ctx.author, ctx.author.id, e))
+            await ctx.message.delete()
+            return
 
-    if charData[getLang("Fields", "status")] != getLang("Status", "STATUS_APPROVED"):
-        try:
-            await ctx.author.send(getLang("Send", "SEND_FAILED_NOT_APPROVED"))
-        except Exception as e:
-            await logMSG(getLang("Send", "SEND_FAILED_LOG").format(ctx.author, ctx.author.id, e))
-        await ctx.message.delete()
-        return
+        if ctx.author.id != int(charData["owner"]):
+            try:
+                await ctx.author.send(getLang("Send", "SEND_FAILED_NOT_OWNER"))
+            except Exception as e:
+                await logMSG(getLang("Send", "SEND_FAILED_LOG").format(ctx.author, ctx.author.id, e))
+            await ctx.message.delete()
+            return
 
-    portJS = json.loads(charData["misc"])
-    custom_img = None
+        if charData[getLang("Fields", "status")] != getLang("Status", "STATUS_APPROVED"):
+            try:
+                await ctx.author.send(getLang("Send", "SEND_FAILED_NOT_APPROVED"))
+            except Exception as e:
+                await logMSG(getLang("Send", "SEND_FAILED_LOG").format(ctx.author, ctx.author.id, e))
+            await ctx.message.delete()
+            return
 
-    # Checks if in MRC and applies MRC nickname instead.
+        portJS = json.loads(charData["misc"])
+        custom_img = None
 
-    if (ctx.channel.name).lower() == getLang("Send", "SEND_MRC") and getLang("Send", "SEND_MRC").casefold() in (
-            i.casefold() for
-            i in portJS):
-        i_l = {}
-        for i in portJS:
-            i_l[i.lower()] = portJS[i]
-        name = i_l[getLang("Send", "SEND_MRC")]
+        # Checks if in MRC and applies MRC nickname instead.
+
+        if (ctx.channel.name).lower() == getLang("Send", "SEND_MRC") and getLang("Send", "SEND_MRC").casefold() in (
+                i.casefold() for
+                i in portJS):
+            i_l = {}
+            for i in portJS:
+                i_l[i.lower()] = portJS[i]
+            name = i_l[getLang("Send", "SEND_MRC")]
+        else:
+            name = charData[getLang("Fields", "name")]
+
+        if getLang("Send", "SEND_PORTRAIT").lower().capitalize() in portJS:
+            custom_img = portJS[getLang("Send", "SEND_PORTRAIT")]
+
     else:
-        name = charData[getLang("Fields", "name")]
-
+        name = raw_name
+        custom_img = None
     name = name[0:80]
-
-    if getLang("Send", "SEND_PORTRAIT").lower().capitalize() in portJS:
-        custom_img = portJS[getLang("Send", "SEND_PORTRAIT")]
 
     await webhook_manager.send(ctx, name, message, custom_img)
 

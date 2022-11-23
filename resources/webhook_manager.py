@@ -8,7 +8,7 @@ c_webhooks = []
 
 
 async def send(ctx, name, message, custom_img=None):
-    if isinstance(ctx, discord.ext.commands.Context):
+    if isinstance(ctx, discord.ext.commands.Context) or isinstance(ctx, discord.Thread):
         message_obj = ctx.message
     elif isinstance(ctx, discord.Message):
         message_obj = ctx
@@ -31,8 +31,12 @@ async def send(ctx, name, message, custom_img=None):
 
 async def sendWH(name, img, message, channel, author):
     webhook = False
-
+    is_thread = False
     c_webhooks = getWebhookCache()
+
+    if isinstance(channel, discord.Thread):
+        is_thread = channel
+        channel = channel.parent
 
     async with aiohttp.ClientSession() as session:
         if c_webhooks:
@@ -45,13 +49,15 @@ async def sendWH(name, img, message, channel, author):
             c_webhooks = []
 
         if not webhook:
-            webhook = await channel.create_webhook(name='NoWebhooks Generated Webhook',
+            webhook = await channel.create_webhook(name='MTT2 Generated Webhook',
                                                    reason=f'{author} ({author.id}) used MTT2 to send a message in {channel}')
             c_webhooks.append((channel.id, webhook.url))
             setWebhookCache(c_w=c_webhooks)
 
-        await webhook.send(message, username=name, avatar_url=img)
-        # await webhook.delete(reason="Auto-Delete Used Webhook")
+        if is_thread:
+            await webhook.send(message, username=name, avatar_url=img, thread=is_thread)
+        else:
+            await webhook.send(message, username=name, avatar_url=img)
 
 
 def getWebhookCache():  # Gets cache of webhooks.
