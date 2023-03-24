@@ -846,7 +846,7 @@ async def alertGMs(ctx, charID, resub=False, old=None):
         for n in new:
             newStr = f"{newStr}\n{n}: {new[n]}"
         differences = getdiff.getDiffCheck(oldStr, newStr)
-        isResubmit = f"{isResubmit}\n({getLang('Register', 'REGISTER_DIFFERENCE')} {differences})\n"
+        isResubmit = f"{isResubmit}\n({getLang('Register', 'REGISTER_DIFFERENCE')} {differences} )\n"
 
     else:
         isResubmit = ''
