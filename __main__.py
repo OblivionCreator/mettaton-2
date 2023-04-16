@@ -1037,6 +1037,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                                  gender=charData[getLang("Fields", "gender")],
                                  abil=charData[getLang("Fields", "abilities/tools")],
                                  appear=charData[getLang("Fields", "appearance")],
+                                 species=charData[getLang("Fields", "species")],
                                  backg=charData[getLang("Fields", "background")],
                                  person=charData[getLang("Fields", "personality")],
                                  prefilled=charData[getLang("Fields", "prefilled")],
