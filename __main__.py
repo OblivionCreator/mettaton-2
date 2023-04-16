@@ -726,7 +726,7 @@ async def reRegister(ctx, charID):
                                        species=cfields[getLang("Fields", "species")],
                                        backg=cfields[getLang("Fields", "background")],
                                        person=cfields[getLang("Fields", "personality")],
-                                       prefilled=cfields[getLang("Fields", "prefilled")], misc=misc, ctx=ctx)
+                                       prefilled=cfields[getLang("Fields", "prefilled")], misc=json.dumps(misc), ctx=ctx)
                 await user.send(getLang("Register", "REGISTER_PREVIEW_LONG"), file=discord.File(previewTxt))
         elif selector.lower() == getLang("Register", "REGISTER_COMPLETE") or selector.lower() == getLang("Register",
                                                                                                          "REGISTER_STORE"):
@@ -739,7 +739,7 @@ async def reRegister(ctx, charID):
                                   species=cfields[getLang("Fields", "species")],
                                   backg=cfields[getLang("Fields", "background")],
                                   person=cfields[getLang("Fields", "personality")],
-                                  prefilled=cfields[getLang("Fields", "prefilled")], charID=charID, misc=misc)
+                                  prefilled=cfields[getLang("Fields", "prefilled")], charID=charID, misc=json.dumps(misc))
             await alertGMs(ctx, charID, resub=True, old=oldchr)
             await user.send(getLang("Register", "REGISTER_SUBMISSION").format(charID))
             registerLoop = False
