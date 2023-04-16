@@ -21,9 +21,7 @@ from resources import getdiff, webhook_manager
 import validators
 import re
 
-intents = discord.Intents.default()
-intents.members = True
-intents.messages = True
+intents = discord.Intents.all()
 backupOngoing = False
 pageSize = 20
 
