@@ -23,7 +23,7 @@ import re
 
 intents = discord.Intents.default()
 intents.members = True
-intents.message_content = True
+intents.messages = True
 backupOngoing = False
 pageSize = 20
 
@@ -328,6 +328,7 @@ def create_connection(db_file):
     "gender"    TEXT,
     "abil"    TEXT,
     "appear"    TEXT,
+    "species"    TEXT,
     "backg"    TEXT,
     "person"    TEXT,
     "prefilled"    TEXT,
@@ -392,9 +393,15 @@ async def block_help(ctx):
         return True
 
 
+
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='', misc=None,
-                  status='Pending', charID=''):
-    character = (owner, status, name, age, gender, abil, appear, backg, person, prefilled)
+                  status='Pending', charID='', species=''):
+
+    if not misc:
+        misc = '{}'
+
+    character = (owner, status, name, age, gender, abil, appear, species, backg, person, prefilled, misc)
+    print(type(misc))
     """
     :param conn:
     :param character:
@@ -402,21 +409,14 @@ async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', 
     """
 
     if charID == '':
-        charFinal = character + ('{}',)
-        sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,backg,person,prefilled,misc) VALUES(?,?,?,?,?,?,?,?,?,?,?)'''
+        sql = '''INSERT INTO charlist(owner,status,name,age,gender,abil,appear,species,backg,person,prefilled,misc) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)'''
         cur = conn.cursor()
-        cur.execute(sql, charFinal)
+        cur.execute(sql, character)
         conn.commit()
         return cur.lastrowid
     else:
-        if misc:
-            jsmisc = json.dumps(misc)
-            character = character + (jsmisc,)
         charwid = character + (int(charID),)
-        if misc:
-            sql = '''UPDATE charlist SET owner=?,status=?,name=?,age=?,gender=?,abil=?,appear=?,backg=?,person=?,prefilled=?,misc=? WHERE charID=?'''
-        else:
-            sql = '''UPDATE charlist SET owner=?,status=?,name=?,age=?,gender=?,abil=?,appear=?,backg=?,person=?,prefilled=? WHERE charID=?'''
+        sql = '''UPDATE charlist SET owner=?,status=?,name=?,age=?,gender=?,abil=?,appear=?,species=?,backg=?,person=?,prefilled=?,misc=? WHERE charID=?'''
         cur = conn.cursor()
         cur.execute(sql, charwid)
         conn.commit()
@@ -627,6 +627,7 @@ async def reRegister(ctx, charID):
     cfields[getLang("Fields", "gender")] = charData[getLang("Fields", "gender")]
     cfields[getLang("Fields", "abilities/tools")] = charData[getLang("Fields", "abilities/tools")]
     cfields[getLang("Fields", "appearance")] = charData[getLang("Fields", "appearance")]
+    cfields[getLang("Fields", "species")] = charData[getLang("Fields", "species")]
     cfields[getLang("Fields", "background")] = charData[getLang("Fields", "background")]
     cfields[getLang("Fields", "personality")] = charData[getLang("Fields", "personality")]
     cfields[getLang("Fields", "prefilled")] = charData[getLang("Fields", "prefilled")]
@@ -644,6 +645,7 @@ async def reRegister(ctx, charID):
                              gender=charData[getLang("Fields", "gender")],
                              abil=charData[getLang("Fields", "abilities/tools")],
                              appear=charData[getLang("Fields", "appearance")],
+                             species=cfields[getLang("Fields", "species")],
                              backg=charData[getLang("Fields", "background")],
                              person=charData[getLang("Fields", "personality")],
                              prefilled=charData[getLang("Fields", "prefilled")], ctx=ctx)
@@ -723,6 +725,7 @@ async def reRegister(ctx, charID):
                                        gender=cfields[getLang("Fields", "gender")],
                                        abil=cfields[getLang("Fields", "abilities/tools")],
                                        appear=cfields[getLang("Fields", "appearance")],
+                                       species=cfields[getLang("Fields", "species")],
                                        backg=cfields[getLang("Fields", "background")],
                                        person=cfields[getLang("Fields", "personality")],
                                        prefilled=cfields[getLang("Fields", "prefilled")], misc=misc, ctx=ctx)
@@ -735,6 +738,7 @@ async def reRegister(ctx, charID):
                                   gender=cfields[getLang("Fields", "gender")],
                                   abil=cfields[getLang("Fields", "abilities/tools")],
                                   appear=cfields[getLang("Fields", "appearance")],
+                                  species=cfields[getLang("Fields", "species")],
                                   backg=cfields[getLang("Fields", "background")],
                                   person=cfields[getLang("Fields", "personality")],
                                   prefilled=cfields[getLang("Fields", "prefilled")], charID=charID, misc=misc)
@@ -875,6 +879,7 @@ async def alertGMs(ctx, charID, resub=False, old=None):
                              gender=charData[getLang("Fields", "gender")],
                              abil=charData[getLang("Fields", "abilities/tools")],
                              appear=charData[getLang("Fields", "appearance")],
+                             species=charData[getLang("Fields", "species")],
                              backg=charData[getLang("Fields", "background")],
                              person=charData[getLang("Fields", "personality")],
                              prefilled=charData[getLang("Fields", "prefilled")],
@@ -1081,6 +1086,7 @@ def _getCharDict(charID=0):
         getLang("Fields", "gender"): None,
         getLang("Fields", "abilities/tools"): None,
         getLang("Fields", "appearance"): None,
+        getLang("Fields", "species"): None,
         getLang("Fields", "background"): None,
         getLang("Fields", "personality"): None,
         getLang("Fields", "prefilled"): None,
@@ -1322,7 +1328,7 @@ async def _list(ctx, pageIdentifier='', page=''):
 fields = [getLang("Fields", 'owner'), 'ownerid', getLang("Fields", 'status'), getLang("Fields", 'name'), 'charid', 'id',
           getLang("Fields", 'age'), getLang("Fields", 'gender'), getLang("Fields", 'abilities/tools'), 'abilities',
           getLang("Fields", 'appearance'), getLang("Fields", 'background'), getLang("Fields", 'personality'),
-          'prefilled', getLang("Fields", 'prefilled'), 'custom', 'misc']
+          'prefilled', getLang("Fields", 'prefilled'), 'custom', 'misc', getLang("Fields", 'species')]
 
 
 def convertField(selector):
@@ -1495,6 +1501,9 @@ def previewChar(cfields=None, prefilled=None, name=None, misc=None):
         if cfields['appearance'] != '': embedVar.add_field(name=getLang("Fields", "appearance").capitalize() + ':',
                                                            value=cfields[getLang("Fields", 'appearance')],
                                                            inline=False)
+        if cfields['species'] != '': embedVar.add_field(name=getLang("Fields", "species").capitalize() + ':',
+                                                            value=cfields[getLang("Fields", 'species')],
+                                                            inline=False)
         if cfields['background'] != '': embedVar.add_field(name=getLang("Fields", "background").capitalize() + ':',
                                                            value=cfields[getLang("Fields", 'background')],
                                                            inline=False)
@@ -1561,6 +1570,7 @@ async def _registerChar(ctx, user):
                 getLang("Fields", "age"): None,
                 getLang("Fields", "abilities/tools"): None,
                 getLang("Fields", "appearance"): None,
+                getLang("Fields", "species"): None,
                 getLang("Fields", "background"): None,
                 getLang("Fields", "personality"): None,
             }
@@ -1611,6 +1621,7 @@ async def _registerChar(ctx, user):
                                                gender=cfields[getLang("Fields", "gender")],
                                                abil=cfields[getLang("Fields", "abilities/tools")],
                                                appear=cfields[getLang("Fields", "appearance")],
+                                               species=cfields[getLang("Fields", "species")],
                                                backg=cfields[getLang("Fields", "background")],
                                                person=cfields[getLang("Fields", "personality")],
                                                prefilled=prefilled)
