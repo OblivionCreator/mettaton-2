@@ -922,7 +922,7 @@ def charToTxt(charID, owner, status, name, age, gender, abil, species, appear, b
     if gender != '': charTXT = charTXT + f"{getLang('Fields', 'gender').capitalize()}: {gender}\n\n"
     if abil != '': charTXT = charTXT + f"{getLang('Fields', 'abilities/tools').capitalize()}: {abil}\n\n"
     if appear != '': charTXT = charTXT + f"{getLang('Fields', 'appearance').capitalize()}: {appear}\n\n"
-    if species != '': charTXT = charTXT + f"{getLang('Fields', 'species').capitalize()}: {appear}\n\n"
+    if species != '': charTXT = charTXT + f"{getLang('Fields', 'species').capitalize()}: {species}\n\n"
     if backg != '': charTXT = charTXT + f"{getLang('Fields', 'background').capitalize()}: {backg}\n\n"
     if person != '': charTXT = charTXT + f"{getLang('Fields', 'personality').capitalize()}: {person}\n\n"
     if misc != '': charTXT = charTXT + miscStr
