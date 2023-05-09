@@ -726,7 +726,7 @@ async def reRegister(ctx, charID):
                                        species=cfields[getLang("Fields", "species")],
                                        backg=cfields[getLang("Fields", "background")],
                                        person=cfields[getLang("Fields", "personality")],
-                                       prefilled=cfields[getLang("Fields", "prefilled")], misc=json.dumps(misc), ctx=ctx)
+                                       prefilled=cfields[getLang("Fields", "prefilled")], misc=misc, ctx=ctx)
                 await user.send(getLang("Register", "REGISTER_PREVIEW_LONG"), file=discord.File(previewTxt))
         elif selector.lower() == getLang("Register", "REGISTER_COMPLETE") or selector.lower() == getLang("Register",
                                                                                                          "REGISTER_STORE"):
@@ -1504,7 +1504,7 @@ def previewChar(cfields=None, prefilled=None, name=None, misc=None):
         if cfields['species'] != '': embedVar.add_field(name=getLang("Fields", "species").capitalize() + ':',
                                                             value=cfields[getLang("Fields", 'species')],
                                                             inline=False)
-        if cfields['background'] != '': embedVar.add_field(name=getLang("Fields", "background").capitalize() + ':',
+        if cfields['backstory'] != '': embedVar.add_field(name=getLang("Fields", "backstory").capitalize() + ':',
                                                            value=cfields[getLang("Fields", 'background')],
                                                            inline=False)
         if cfields['personality'] != '': embedVar.add_field(name=getLang("Fields", "personality").capitalize() + ':',
