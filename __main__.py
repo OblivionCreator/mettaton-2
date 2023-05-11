@@ -5,8 +5,8 @@ import random
 from pathlib import Path
 from discord.ext import tasks
 from datetime import datetime
-import discord as discord
-from discord.ext import commands
+import disnake as discord
+from disnake.ext import commands
 import sqlite3
 from sqlite3 import Error
 from collections.abc import Sequence
@@ -14,8 +14,8 @@ import ast
 from dataclasses import dataclass
 import time
 import json
-from discord import HTTPException
-from discord.utils import get
+from disnake import HTTPException, TextInputStyle
+from disnake.utils import get
 from configparser import ConfigParser
 from resources import getdiff, webhook_manager
 import validators
@@ -786,6 +786,62 @@ async def custom_Register(ctx, user, misc):
             misc[field] = content
             await user.send(getLang("Register", "REGISTER_CUSTOM_SUCCESS").format(field[0:100]))
     return misc
+
+@bot.slash_command(name="newregister", guild_ids=[770428394918641694, 363821745590763520])
+async def newregister(inter, character_id:int=None):
+
+    if character_id:
+        temp_data = _getCharDict(character_id)
+        if isinstance(temp_data, dict) and temp_data[getLang("Fields", "owner")] == inter.author.id:
+            print("valid")
+        else:
+            character_id = 0
+    else:
+        character_id = 0
+    await inter.response.send_message(components=discord.ui.Button(label='<-', custom_id=f'register-1_{character_id}'))
+
+@bot.listen("on_button_click")
+async def on_register_button_click(inter):
+    if inter.data.custom_id.startswith('register-1_'):
+        await inter.message.edit("a", components=discord.ui.Button(label=':)', custom_id=f'register_1'))
+
+    # REGISTER MODAL 1
+
+    
+
+    class RegisterModal1(discord.ui.Modal):
+        def __init__(self):
+            # The details of the modal, and its components
+            components = [
+                discord.ui.TextInput(
+                    label="Character Name",
+                    placeholder="Foo Tag",
+                    custom_id="name",
+                    style=TextInputStyle.short,
+                    max_length=50,
+                    value=charData[getLang("Fields", "name")]
+                ),
+                discord.ui.TextInput(
+                    label="Description",
+                    placeholder="Lorem ipsum dolor sit amet.",
+                    custom_id="description",
+                    style=TextInputStyle.paragraph,
+                ),
+            ]
+            super().__init__(title="Create Tag", components=components)
+
+        # The callback received when the user input is completed.
+        async def callback(self, inter: discord.ModalInteraction):
+            embed = discord.Embed(title="Tag Creation")
+            for key, value in inter.text_values.items():
+                embed.add_field(
+                    name=key.capitalize(),
+                    value=value[:1024],
+                    inline=False,
+                )
+            await inter.response.send_message(embed=embed)
+
+    await inter.response.send_modal(modal=RegisterModal1())
 
 
 @bot.command(pass_context=True, name=getLang("Commands", "CMD_REGISTER"),
