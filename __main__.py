@@ -3,7 +3,7 @@ import math
 import os
 import random
 from pathlib import Path
-from discord.ext import tasks
+from disnake.ext import tasks
 from datetime import datetime
 import disnake as discord
 from disnake.ext import commands
@@ -807,7 +807,7 @@ async def on_register_button_click(inter):
 
     # REGISTER MODAL 1
 
-    
+
 
     class RegisterModal1(discord.ui.Modal):
         def __init__(self):
