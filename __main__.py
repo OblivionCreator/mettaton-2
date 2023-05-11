@@ -787,27 +787,38 @@ async def custom_Register(ctx, user, misc):
             await user.send(getLang("Register", "REGISTER_CUSTOM_SUCCESS").format(field[0:100]))
     return misc
 
+
 @bot.slash_command(name="newregister", guild_ids=[770428394918641694, 363821745590763520])
 async def newregister(inter, character_id:int=None):
-
+    application_embed = discord.Embed(title=f"Preview for ID {character_id}")
     if character_id:
         temp_data = _getCharDict(character_id)
         if isinstance(temp_data, dict) and temp_data[getLang("Fields", "owner")] == inter.author.id:
-            print("valid")
+            for field in temp_data:
+                if not temp_data[field]:
+                    continue
+                else:
+                    application_embed.add_field(name=field, value=temp_data[field])
         else:
             character_id = 0
     else:
         character_id = 0
-    await inter.response.send_message(components=discord.ui.Button(label='<-', custom_id=f'register-1_{character_id}'))
-
-@bot.listen("on_button_click")
-async def on_register_button_click(inter):
-    if inter.data.custom_id.startswith('register-1_'):
-        await inter.message.edit("a", components=discord.ui.Button(label=':)', custom_id=f'register_1'))
-
-    # REGISTER MODAL 1
-
-
+        application_embed.add_field(name="Owner", value="", inline=False)
+        application_embed.add_field(name="Status", value="Pending", inline=False)
+        application_embed.add_field(name="Name", value="", inline=False)
+        application_embed.add_field(name="Age", value="", inline=False)
+        application_embed.add_field(name="Gender", value="", inline=False)
+        application_embed.add_field(name="Abilities/Tools", value="", inline=False)
+        application_embed.add_field(name="Appearance", value="", inline=False)
+        application_embed.add_field(name="Species", value="", inline=False)
+        application_embed.add_field(name="Backstory", value="", inline=False)
+        application_embed.add_field(name="Personality", value="", inline=False)
+    await inter.response.send_message(embed=application_embed, components=[
+        discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple, custom_id=f"basic-info_{character_id}"),
+        discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple, custom_id=f"details{character_id}")
+    ])
+    await inter.followup.send('Placeholder "check your DMS" message!')
+    app_message = await inter.original_response()  # To access the original message later for editing.
 
     class RegisterModal1(discord.ui.Modal):
         def __init__(self):
@@ -815,33 +826,85 @@ async def on_register_button_click(inter):
             components = [
                 discord.ui.TextInput(
                     label="Character Name",
-                    placeholder="Foo Tag",
+                    placeholder="The name of your character.",
                     custom_id="name",
                     style=TextInputStyle.short,
                     max_length=50,
-                    value=charData[getLang("Fields", "name")]
+                    value=""
                 ),
                 discord.ui.TextInput(
-                    label="Description",
-                    placeholder="Lorem ipsum dolor sit amet.",
-                    custom_id="description",
-                    style=TextInputStyle.paragraph,
+                    label="Character Age",
+                    placeholder="The age of your character.",
+                    custom_id="age",
+                    style=TextInputStyle.short,
+                    max_length=50
+                ),
+                discord.ui.TextInput(
+                    label="Character Gender",
+                    placeholder="Your character's gender.",
+                    custom_id="gender",
+                    style=TextInputStyle.short,
+                    max_length=50
+                ),
+                discord.ui.TextInput(
+                    label="Character Species",
+                    placeholder="Your character's species.",
+                    custom_id="species",
+                    style=TextInputStyle.short,
+                    max_length=50
                 ),
             ]
-            super().__init__(title="Create Tag", components=components)
+            super().__init__(title="Basic Info", components=components)
 
         # The callback received when the user input is completed.
         async def callback(self, inter: discord.ModalInteraction):
-            embed = discord.Embed(title="Tag Creation")
+            app_embed = app_message.embeds[0].copy()  # Copies the current version of the application preview embed.
             for key, value in inter.text_values.items():
-                embed.add_field(
-                    name=key.capitalize(),
-                    value=value[:1024],
-                    inline=False,
-                )
-            await inter.response.send_message(embed=embed)
+                for f in range(len(app_embed.fields)):
+                    if app_embed.fields[f].name.lower() == key:
+                        app_embed.set_field_at(f, name=app_embed.fields[f].name, value=value, inline=False)
+            await inter.edit_original_response(embed=app_embed)
 
-    await inter.response.send_modal(modal=RegisterModal1())
+    @bot.listen("on_button_click")
+    async def on_register_button_click(inter):
+        if inter.data.custom_id.startswith('basic-info_'):
+            await inter.response.send_modal(modal=RegisterModal1())
+        elif inter.data.custom_id.startswith("details_"):
+            await inter.response.send_modal(modal=RegisterModal2())
+
+    class RegisterModal2(discord.ui.Modal):
+        def __init__(self):
+            # The details of the modal, and its components
+            components = [
+                discord.ui.TextInput(
+                    label="Character Abilities and Tools",
+                    placeholder="The abilities your character has as well as the tools at their disposal. Describe "
+                                "the strengths and weaknesses of each one (unless it is self-explanatory).",
+                    custom_id="abilities/tools",
+                    style=TextInputStyle.paragraph,
+                ),
+                discord.ui.TextInput(
+                    label="Character Appearance",
+                    placeholder="Your character's appearance.",
+                    custom_id="appearance",
+                    style=TextInputStyle.paragraph,
+                ),
+                discord.ui.TextInput(
+                    label="Character Backstory",
+                    placeholder="The events leading up to your character's introduction into the RP. Describe major "
+                                "events or highlights in their life that are relevant to them, as well as any "
+                                "necessary explanation for how they came to possess certain abilities, tool, etc.",
+                    custom_id="backstory",
+                    style=TextInputStyle.paragraph,
+                ),
+                discord.ui.TextInput(
+                    label="Character Personality",
+                    placeholder="Your character's personality.",
+                    custom_id="personality",
+                    style=TextInputStyle.paragraph,
+                ),
+            ]
+            super().__init__(title="Details", components=components)
 
 
 @bot.command(pass_context=True, name=getLang("Commands", "CMD_REGISTER"),
