@@ -813,29 +813,22 @@ async def newregister(inter, character_id:int=None):
         application_embed.add_field(name="Species", value="", inline=False)
         application_embed.add_field(name="Backstory", value="", inline=False)
         application_embed.add_field(name="Personality", value="", inline=False)
-    application_embed.title = f"Preview for ID {character_id}"
+        application_embed.title = f"Preview for ID {character_id}"
 
-    class RegisterAR1(discord.ui.ActionRow):
-        def __init__(self):
-            components = [
+
+        register_ar_1 = discord.ui.ActionRow(
                 discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple,
                                   custom_id=f"basic-info_{character_id}"),
                 discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple,
                                   custom_id=f"details_{character_id}")
-            ]
-            super().__init__(components=components)
-
-    class RegisterAR2(discord.ui.ActionRow):
-        def __init__(self):
-            components = [
+            )
+        register_ar_2 = discord.ui.ActionRow(
                 discord.ui.Button(label="Complete", style=discord.ButtonStyle.green, custom_id="complete"),
                 discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel")
-            ]
-            super().__init__(components=components)
-
+            )
     await inter.response.send_message(embed=application_embed, components=[
-        RegisterAR1(),
-        RegisterAR2()
+        register_ar_1,
+        register_ar_2
     ])
     await inter.followup.send('Placeholder "check your DMs" message!')
     app_message = await inter.original_response()  # To access the original message later for editing.
