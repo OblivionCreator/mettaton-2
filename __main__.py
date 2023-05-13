@@ -803,7 +803,7 @@ async def newregister(inter, character_id:int=None):
             character_id = 0
     else:
         character_id = 0
-        application_embed.add_field(name="Owner", value="", inline=False)
+        application_embed.add_field(name="Owner", value=f"{inter.author}", inline=False)
         application_embed.add_field(name="Status", value="Pending", inline=False)
         application_embed.add_field(name="Name", value="", inline=False)
         application_embed.add_field(name="Age", value="", inline=False)
@@ -814,9 +814,28 @@ async def newregister(inter, character_id:int=None):
         application_embed.add_field(name="Backstory", value="", inline=False)
         application_embed.add_field(name="Personality", value="", inline=False)
     application_embed.title = f"Preview for ID {character_id}"
+
+    class RegisterAR1(discord.ui.ActionRow):
+        def __init__(self):
+            components = [
+                discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple,
+                                  custom_id=f"basic-info_{character_id}"),
+                discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple,
+                                  custom_id=f"details_{character_id}")
+            ]
+            super().__init__(components=components)
+
+    class RegisterAR2(discord.ui.ActionRow):
+        def __init__(self):
+            components = [
+                discord.ui.Button(label="Complete", style=discord.ButtonStyle.green, custom_id="complete"),
+                discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel")
+            ]
+            super().__init__(components=components)
+
     await inter.response.send_message(embed=application_embed, components=[
-        discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple, custom_id=f"basic-info_{character_id}"),
-        discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple, custom_id=f"details_{character_id}")
+        RegisterAR1(),
+        RegisterAR2()
     ])
     await inter.followup.send('Placeholder "check your DMs" message!')
     app_message = await inter.original_response()  # To access the original message later for editing.
@@ -882,6 +901,17 @@ async def newregister(inter, character_id:int=None):
             await inter.response.send_modal(modal=RegisterModal1())
         elif inter.data.custom_id.startswith("details_"):
             await inter.response.send_modal(modal=RegisterModal2())
+        elif inter.data.custom_id == "cancel":
+            await inter.response.send_message("Are you sure you want to cancel character creation?", components=[
+                discord.ui.Button(label="Yes", style=discord.ButtonStyle.green, custom_id="confirm_cancel"),
+                discord.ui.Button(label="No", style=discord.ButtonStyle.red, custom_id="abort_cancel")
+            ])
+        elif inter.data.custom_id == "confirm_cancel":
+            inter.followup.send("Character creation has been stopped.")
+        elif inter.data.custom_id == "abort_cancel":
+            inter.followup.send("Cancellation aborted.", delete_after=5)
+            cancel_message = await inter.original_response()
+            await discord.Message.delete(cancel_message, delay=5)
 
     class RegisterModal2(discord.ui.Modal):
         def __init__(self):
