@@ -815,14 +815,13 @@ async def newregister(inter, character_id:int=None):
         application_embed.add_field(name="Personality", value="", inline=False)
     await inter.response.send_message(embed=application_embed, components=[
         discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple, custom_id=f"basic-info_{character_id}"),
-        discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple, custom_id=f"details{character_id}")
+        discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple, custom_id=f"details_{character_id}")
     ])
     await inter.followup.send('Placeholder "check your DMS" message!')
     app_message = await inter.original_response()  # To access the original message later for editing.
 
     class RegisterModal1(discord.ui.Modal):
         def __init__(self):
-            # The details of the modal, and its components
             components = [
                 discord.ui.TextInput(
                     label="Character Name",
@@ -863,7 +862,8 @@ async def newregister(inter, character_id:int=None):
                 for f in range(len(app_embed.fields)):
                     if app_embed.fields[f].name.lower() == key:
                         app_embed.set_field_at(f, name=app_embed.fields[f].name, value=value, inline=False)
-            await inter.edit_original_response(embed=app_embed)
+            await app_message.edit(embed=app_embed)
+            await inter.response.send_message(f"Character's basic info has been edited!", ephemeral=True)
 
     @bot.listen("on_button_click")
     async def on_register_button_click(inter):
@@ -874,12 +874,10 @@ async def newregister(inter, character_id:int=None):
 
     class RegisterModal2(discord.ui.Modal):
         def __init__(self):
-            # The details of the modal, and its components
             components = [
                 discord.ui.TextInput(
                     label="Character Abilities and Tools",
-                    placeholder="The abilities your character has as well as the tools at their disposal. Describe "
-                                "the strengths and weaknesses of each one (unless it is self-explanatory).",
+                    placeholder="Describe the strengths and weaknesses of your character's abilities and tools.",
                     custom_id="abilities/tools",
                     style=TextInputStyle.paragraph,
                 ),
@@ -891,9 +889,7 @@ async def newregister(inter, character_id:int=None):
                 ),
                 discord.ui.TextInput(
                     label="Character Backstory",
-                    placeholder="The events leading up to your character's introduction into the RP. Describe major "
-                                "events or highlights in their life that are relevant to them, as well as any "
-                                "necessary explanation for how they came to possess certain abilities, tool, etc.",
+                    placeholder="The events leading up to your character's introduction into the RP.",
                     custom_id="backstory",
                     style=TextInputStyle.paragraph,
                 ),
@@ -905,6 +901,15 @@ async def newregister(inter, character_id:int=None):
                 ),
             ]
             super().__init__(title="Details", components=components)
+
+        async def callback(self, inter: discord.ModalInteraction):
+            app_embed = app_message.embeds[0].copy()  # Copies the current version of the application preview embed.
+            for key, value in inter.text_values.items():
+                for f in range(len(app_embed.fields)):
+                    if app_embed.fields[f].name.lower() == key:
+                        app_embed.set_field_at(f, name=app_embed.fields[f].name, value=value, inline=False)
+            await app_message.edit(embed=app_embed)
+            await inter.response.send_message(f"Character's details have been edited!", ephemeral=True)
 
 
 @bot.command(pass_context=True, name=getLang("Commands", "CMD_REGISTER"),
