@@ -790,7 +790,7 @@ async def custom_Register(ctx, user, misc):
 
 @bot.slash_command(name="newregister", guild_ids=[770428394918641694, 363821745590763520])
 async def newregister(inter, character_id:int=None):
-    application_embed = discord.Embed(title=f"Preview for ID {character_id}")
+    application_embed = discord.Embed(color=discord.Color.yellow())
     if character_id:
         temp_data = _getCharDict(character_id)
         if isinstance(temp_data, dict) and temp_data[getLang("Fields", "owner")] == inter.author.id:
@@ -813,12 +813,20 @@ async def newregister(inter, character_id:int=None):
         application_embed.add_field(name="Species", value="", inline=False)
         application_embed.add_field(name="Backstory", value="", inline=False)
         application_embed.add_field(name="Personality", value="", inline=False)
+    application_embed.title = f"Preview for ID {character_id}"
     await inter.response.send_message(embed=application_embed, components=[
         discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple, custom_id=f"basic-info_{character_id}"),
         discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple, custom_id=f"details_{character_id}")
     ])
-    await inter.followup.send('Placeholder "check your DMS" message!')
+    await inter.followup.send('Placeholder "check your DMs" message!')
     app_message = await inter.original_response()  # To access the original message later for editing.
+
+    def get_app_field(embed_inter, name: str):
+        embed = embed_inter.embeds[0].copy()
+        for f in embed.fields:
+            if f.name.lower() == name:
+                return f.value
+        return ""
 
     class RegisterModal1(discord.ui.Modal):
         def __init__(self):
@@ -829,28 +837,31 @@ async def newregister(inter, character_id:int=None):
                     custom_id="name",
                     style=TextInputStyle.short,
                     max_length=50,
-                    value=""
+                    value=f"{get_app_field(app_message, 'name')}"
                 ),
                 discord.ui.TextInput(
                     label="Character Age",
                     placeholder="The age of your character.",
                     custom_id="age",
                     style=TextInputStyle.short,
-                    max_length=50
+                    max_length=50,
+                    value=f"{get_app_field(app_message, 'age')}"
                 ),
                 discord.ui.TextInput(
                     label="Character Gender",
                     placeholder="Your character's gender.",
                     custom_id="gender",
                     style=TextInputStyle.short,
-                    max_length=50
+                    max_length=50,
+                    value=f"{get_app_field(app_message, 'gender')}"
                 ),
                 discord.ui.TextInput(
                     label="Character Species",
                     placeholder="Your character's species.",
                     custom_id="species",
                     style=TextInputStyle.short,
-                    max_length=50
+                    max_length=50,
+                    value=f"{get_app_field(app_message, 'species')}"
                 ),
             ]
             super().__init__(title="Basic Info", components=components)
@@ -880,24 +891,28 @@ async def newregister(inter, character_id:int=None):
                     placeholder="Describe the strengths and weaknesses of your character's abilities and tools.",
                     custom_id="abilities/tools",
                     style=TextInputStyle.paragraph,
+                    value=f"{get_app_field(app_message, 'abilities/tools')}"
                 ),
                 discord.ui.TextInput(
                     label="Character Appearance",
                     placeholder="Your character's appearance.",
                     custom_id="appearance",
                     style=TextInputStyle.paragraph,
+                    value=f"{get_app_field(app_message, 'appearance')}"
                 ),
                 discord.ui.TextInput(
                     label="Character Backstory",
                     placeholder="The events leading up to your character's introduction into the RP.",
                     custom_id="backstory",
                     style=TextInputStyle.paragraph,
+                    value=f"{get_app_field(app_message, 'backstory')}"
                 ),
                 discord.ui.TextInput(
                     label="Character Personality",
                     placeholder="Your character's personality.",
                     custom_id="personality",
                     style=TextInputStyle.paragraph,
+                    value=f"{get_app_field(app_message, 'personality')}"
                 ),
             ]
             super().__init__(title="Details", components=components)
