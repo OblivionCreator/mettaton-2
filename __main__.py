@@ -791,6 +791,9 @@ async def custom_Register(ctx, user, misc):
 @bot.slash_command(name="newregister", guild_ids=[770428394918641694, 363821745590763520])
 async def newregister(inter, character_id:int=None):
     application_embed = discord.Embed(color=discord.Color.yellow())
+    field_data = {"Owner": f"{inter.author}", "Status": "Pending", "Name": "", "Age": "", "Gender": "",
+                  "Abilities/Tools": "", "Appearance": "", "Species": "", "Backstory": "", "Personality": ""}
+    custom_fields = {"MRC": "", "Portrait": ""}
     if character_id:
         temp_data = _getCharDict(character_id)
         if isinstance(temp_data, dict) and temp_data[getLang("Fields", "owner")] == inter.author.id:
@@ -803,29 +806,26 @@ async def newregister(inter, character_id:int=None):
             character_id = 0
     else:
         character_id = 0
-        application_embed.add_field(name="Owner", value=f"{inter.author}", inline=False)
-        application_embed.add_field(name="Status", value="Pending", inline=False)
-        application_embed.add_field(name="Name", value="", inline=False)
-        application_embed.add_field(name="Age", value="", inline=False)
-        application_embed.add_field(name="Gender", value="", inline=False)
-        application_embed.add_field(name="Abilities/Tools", value="", inline=False)
-        application_embed.add_field(name="Appearance", value="", inline=False)
-        application_embed.add_field(name="Species", value="", inline=False)
-        application_embed.add_field(name="Backstory", value="", inline=False)
-        application_embed.add_field(name="Personality", value="", inline=False)
+        for fi in field_data:
+            application_embed.add_field(name=f"{fi}", value=f"{field_data[fi]}", inline=False)
         application_embed.title = f"Preview for ID {character_id}"
 
-
-        register_ar_1 = discord.ui.ActionRow(
-                discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple,
-                                  custom_id=f"basic-info_{character_id}"),
-                discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple,
-                                  custom_id=f"details_{character_id}")
-            )
-        register_ar_2 = discord.ui.ActionRow(
-                discord.ui.Button(label="Complete", style=discord.ButtonStyle.green, custom_id="complete"),
-                discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel")
-            )
+    register_ar_1 = discord.ui.ActionRow(
+            discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple,
+                              custom_id=f"basic-info_{character_id}"),
+            discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple,
+                              custom_id=f"details_{character_id}"),
+            discord.ui.Button(label="Custom", style=discord.ButtonStyle.blurple,
+                              custom_id=f"custom_{character_id}"),
+            discord.ui.Button(label="+", style=discord.ButtonStyle.grey,
+                              custom_id=f"add-field_{character_id}"),
+            discord.ui.Button(label="-", style=discord.ButtonStyle.grey,
+                              custom_id=f"remove-field_{character_id}")
+        )
+    register_ar_2 = discord.ui.ActionRow(
+            discord.ui.Button(label="Submit", style=discord.ButtonStyle.green, custom_id="submit"),
+            discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel")
+        )
     await inter.response.send_message(embed=application_embed, components=[
         register_ar_1,
         register_ar_2
@@ -833,121 +833,181 @@ async def newregister(inter, character_id:int=None):
     await inter.followup.send('Placeholder "check your DMs" message!')
     app_message = await inter.original_response()  # To access the original message later for editing.
 
-    def get_app_field(embed_inter, name: str):
+    async def update_preview(embed_inter, info):
         embed = embed_inter.embeds[0].copy()
-        for f in embed.fields:
-            if f.name.lower() == name:
-                return f.value
-        return ""
+        for f in range(len(embed.fields)):
+            if embed.fields[f].name in info.keys():
+                key = embed.fields[f].name
+                embed.set_field_at(f, name=key, value=info[key], inline=False)
+        await embed_inter.edit(embed=embed)
 
-    class RegisterModal1(discord.ui.Modal):
+    class RegisterBasicInfoFields(discord.ui.Modal):
         def __init__(self):
             components = [
                 discord.ui.TextInput(
                     label="Character Name",
                     placeholder="The name of your character.",
-                    custom_id="name",
+                    custom_id="Name",
                     style=TextInputStyle.short,
                     max_length=50,
-                    value=f"{get_app_field(app_message, 'name')}"
+                    value=f"{field_data['Name']}"
                 ),
                 discord.ui.TextInput(
                     label="Character Age",
                     placeholder="The age of your character.",
-                    custom_id="age",
+                    custom_id="Age",
                     style=TextInputStyle.short,
                     max_length=50,
-                    value=f"{get_app_field(app_message, 'age')}"
+                    value=f"{field_data['Age']}"
                 ),
                 discord.ui.TextInput(
                     label="Character Gender",
                     placeholder="Your character's gender.",
-                    custom_id="gender",
+                    custom_id="Gender",
                     style=TextInputStyle.short,
                     max_length=50,
-                    value=f"{get_app_field(app_message, 'gender')}"
+                    value=f"{field_data['Gender']}"
                 ),
                 discord.ui.TextInput(
                     label="Character Species",
                     placeholder="Your character's species.",
-                    custom_id="species",
+                    custom_id="Species",
                     style=TextInputStyle.short,
                     max_length=50,
-                    value=f"{get_app_field(app_message, 'species')}"
+                    value=f"{field_data['Species']}"
                 ),
             ]
             super().__init__(title="Basic Info", components=components)
 
         # The callback received when the user input is completed.
         async def callback(self, inter: discord.ModalInteraction):
-            app_embed = app_message.embeds[0].copy()  # Copies the current version of the application preview embed.
             for key, value in inter.text_values.items():
-                for f in range(len(app_embed.fields)):
-                    if app_embed.fields[f].name.lower() == key:
-                        app_embed.set_field_at(f, name=app_embed.fields[f].name, value=value, inline=False)
-            await app_message.edit(embed=app_embed)
+                if key in field_data.keys():
+                    field_data[key] = value
+            await update_preview(app_message, field_data)
             await inter.response.send_message(f"Character's basic info has been edited!", ephemeral=True)
+
+    class RegisterDetailsFields(discord.ui.Modal):
+        def __init__(self):
+            components = [
+                discord.ui.TextInput(
+                    label="Character Abilities and Tools",
+                    placeholder="Describe the strengths and weaknesses of your character's abilities and tools.",
+                    custom_id="Abilities/Tools",
+                    style=TextInputStyle.paragraph,
+                    value=f"{field_data['Abilities/Tools']}"
+                ),
+                discord.ui.TextInput(
+                    label="Character Appearance",
+                    placeholder="Your character's appearance.",
+                    custom_id="Appearance",
+                    style=TextInputStyle.paragraph,
+                    value=f"{field_data['Appearance']}"
+                ),
+                discord.ui.TextInput(
+                    label="Character Backstory",
+                    placeholder="The events leading up to your character's introduction into the RP.",
+                    custom_id="Backstory",
+                    style=TextInputStyle.paragraph,
+                    value=f"{field_data['Backstory']}"
+                ),
+                discord.ui.TextInput(
+                    label="Character Personality",
+                    placeholder="Your character's personality.",
+                    custom_id="Personality",
+                    style=TextInputStyle.paragraph,
+                    value=f"{field_data['Personality']}"
+                ),
+            ]
+            super().__init__(title="Details", components=components)
+
+        async def callback(self, inter: discord.ModalInteraction):
+            for key, value in inter.text_values.items():
+                if key in field_data.keys():
+                    field_data[key] = value
+            await update_preview(app_message, field_data)
+            await inter.response.send_message(f"Character's details have been edited!", ephemeral=True)
+
+    class RegisterCustomFields(discord.ui.Modal):
+        def __init__(self):
+            components = []
+            for c in custom_fields:
+                ti = discord.ui.TextInput(
+                    label=c,
+                    custom_id=c,
+                    style=TextInputStyle.paragraph,
+                    value=custom_fields[c]
+                )
+                components.append(ti)
+            super().__init__(title="Custom Fields", components=components)
+
+        async def callback(self, inter: discord.ModalInteraction):
+            for key, value in inter.text_values.items():
+                custom_fields[key] = value
+            await update_preview(app_message, custom_fields)
+            await inter.response.send_message(f"Character's custom fields have been edited!", ephemeral=True)
+
+    class RegisterNewField(discord.ui.Modal):
+        def __init__(self):
+            components = [
+                discord.ui.TextInput(
+                    label="New Field Name",
+                    placeholder="The title of your custom field.",
+                    custom_id="New Field Name",
+                    style=TextInputStyle.short,
+                ),
+                discord.ui.TextInput(
+                    label="New Field Text",
+                    placeholder="The contents of your custom field.",
+                    custom_id="New Field Text",
+                    style=TextInputStyle.paragraph,
+                )
+            ]
+            super().__init__(title="New Custom Field", components=components)
+
+        async def callback(self, inter: discord.ModalInteraction):
+            app_embed = app_message.embeds[0].copy()
+            new_field = []
+            for key, value in inter.text_values.items():
+                new_field.append(value)
+            custom_fields[new_field[0]] = new_field[1]
+            app_embed.add_field(name=new_field[0], value=new_field[1])
+            await update_preview(app_message, custom_fields)
+            await inter.response.send_message(f"Custom field has been added to application!", ephemeral=True)
 
     @bot.listen("on_button_click")
     async def on_register_button_click(inter):
         if inter.data.custom_id.startswith('basic-info_'):
-            await inter.response.send_modal(modal=RegisterModal1())
+            await inter.response.send_modal(modal=RegisterBasicInfoFields())
         elif inter.data.custom_id.startswith("details_"):
-            await inter.response.send_modal(modal=RegisterModal2())
+            await inter.response.send_modal(modal=RegisterDetailsFields())
+        elif inter.data.custom_id.startswith("custom_"):
+            await inter.response.send_modal(modal=RegisterCustomFields())
+        elif inter.data.custom_id.startswith("add-field_"):
+            if len(custom_fields) > 5:
+                await inter.response.send_message("You've already made the maximum number of custom fields!")
+            else:
+                await inter.response.send_modal(modal=RegisterNewField())
+        elif inter.data.custom_id.startswith("remove-field_"):
+            components = [discord.ui.StringSelect(
+                options=custom_fields
+            )]
+            await inter.response.send_message("What custom field would you like to delete?", components=components)
+            whuh = await callback(inter)
+            print(whuh)
         elif inter.data.custom_id == "cancel":
             await inter.response.send_message("Are you sure you want to cancel character creation?", components=[
                 discord.ui.Button(label="Yes", style=discord.ButtonStyle.green, custom_id="confirm_cancel"),
                 discord.ui.Button(label="No", style=discord.ButtonStyle.red, custom_id="abort_cancel")
             ])
         elif inter.data.custom_id == "confirm_cancel":
-            inter.followup.send("Character creation has been stopped.")
+            await inter.response.send_message("Character creation has been stopped.")
         elif inter.data.custom_id == "abort_cancel":
-            inter.followup.send("Cancellation aborted.", delete_after=5)
-            cancel_message = await inter.original_response()
-            await discord.Message.delete(cancel_message, delay=5)
-
-    class RegisterModal2(discord.ui.Modal):
-        def __init__(self):
-            components = [
-                discord.ui.TextInput(
-                    label="Character Abilities and Tools",
-                    placeholder="Describe the strengths and weaknesses of your character's abilities and tools.",
-                    custom_id="abilities/tools",
-                    style=TextInputStyle.paragraph,
-                    value=f"{get_app_field(app_message, 'abilities/tools')}"
-                ),
-                discord.ui.TextInput(
-                    label="Character Appearance",
-                    placeholder="Your character's appearance.",
-                    custom_id="appearance",
-                    style=TextInputStyle.paragraph,
-                    value=f"{get_app_field(app_message, 'appearance')}"
-                ),
-                discord.ui.TextInput(
-                    label="Character Backstory",
-                    placeholder="The events leading up to your character's introduction into the RP.",
-                    custom_id="backstory",
-                    style=TextInputStyle.paragraph,
-                    value=f"{get_app_field(app_message, 'backstory')}"
-                ),
-                discord.ui.TextInput(
-                    label="Character Personality",
-                    placeholder="Your character's personality.",
-                    custom_id="personality",
-                    style=TextInputStyle.paragraph,
-                    value=f"{get_app_field(app_message, 'personality')}"
-                ),
-            ]
-            super().__init__(title="Details", components=components)
-
-        async def callback(self, inter: discord.ModalInteraction):
-            app_embed = app_message.embeds[0].copy()  # Copies the current version of the application preview embed.
-            for key, value in inter.text_values.items():
-                for f in range(len(app_embed.fields)):
-                    if app_embed.fields[f].name.lower() == key:
-                        app_embed.set_field_at(f, name=app_embed.fields[f].name, value=value, inline=False)
-            await app_message.edit(embed=app_embed)
-            await inter.response.send_message(f"Character's details have been edited!", ephemeral=True)
+            await inter.response.send_message("Cancellation aborted.", delete_after=5)
+            # cancel_message = await inter.original_response()
+            # await discord.Message.delete(cancel_message, delay=5)
+        elif inter.data.custom_id == "submit":
+            inter.response.send_message("Placeholder 'character has been submitted' message.")
 
 
 @bot.command(pass_context=True, name=getLang("Commands", "CMD_REGISTER"),
