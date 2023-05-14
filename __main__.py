@@ -989,12 +989,22 @@ async def newregister(inter, character_id:int=None):
             else:
                 await inter.response.send_modal(modal=RegisterNewField())
         elif inter.data.custom_id.startswith("remove-field_"):
-            components = [discord.ui.StringSelect(
-                options=custom_fields
-            )]
-            await inter.response.send_message("What custom field would you like to delete?", components=components)
-            whuh = await callback(inter)
-            print(whuh)
+            cfield_names = []
+            for key in custom_fields:
+                cfield_names.append(key)
+
+            class RegisterRemoveMenu(discord.ui.Select):
+                def __init__(self):
+                    super().__init__(options=cfield_names, placeholder="Field to delete...")
+
+                async def callback(self, inter):
+                    print("HEY COMPUTER WORK DAMN YOU")
+                    trgt_field = inter.values  # I doubt this will work, but how are you supposed to get the output?
+                    await update_preview(app_message, custom_fields)
+                    await inter.response.send_message(f"Custom field has been removed from application!", ephemeral=True)
+
+            await inter.response.send_message("What custom field would you like to delete?",
+                                              components=RegisterRemoveMenu())
         elif inter.data.custom_id == "cancel":
             await inter.response.send_message("Are you sure you want to cancel character creation?", components=[
                 discord.ui.Button(label="Yes", style=discord.ButtonStyle.green, custom_id="confirm_cancel"),
