@@ -60,7 +60,8 @@ def configFields():
         'autobackup': False,
         'language': 'translation/lang_en.ini',
         'denylist': [],
-        'allowprefilled': True
+        'allowprefilled': True,
+        'botschannel': 0
     }
     return curConfig
 
