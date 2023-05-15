@@ -791,6 +791,7 @@ async def custom_Register(ctx, user, misc):
 
 @bot.slash_command(name="newregister", guild_ids=[770428394918641694, 363821745590763520])
 async def newregister(inter, character_id:int=None):
+    identifier = f"{inter.author.id}.{random.randint(1, 100)}"
     application_embed = discord.Embed(color=discord.Color.yellow())
     field_data = {"Owner": f"{inter.author}", "Status": "Pending", "Name": "", "Age": "", "Gender": "",
                   "Abilities/Tools": "", "Appearance": "", "Species": "", "Backstory": "", "Personality": ""}
@@ -814,15 +815,16 @@ async def newregister(inter, character_id:int=None):
 
     register_ar_1 = discord.ui.ActionRow(
             discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple,
-                              custom_id=f"basic-info_{character_id}"),
+                              custom_id=f"basic-info_{identifier}"),
             discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple,
-                              custom_id=f"details_{character_id}"),
+                              custom_id=f"details_{identifier}"),
             discord.ui.Button(label="Add Field", style=discord.ButtonStyle.grey,
-                              custom_id=f"add-field_{character_id}")
+                              custom_id=f"add-field_{identifier}")
         )
     register_ar_2 = discord.ui.ActionRow(
-            discord.ui.Button(label="Submit", style=discord.ButtonStyle.green, custom_id="submit", disabled=True),
-            discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel")
+            discord.ui.Button(label="Submit", style=discord.ButtonStyle.green, custom_id=f"submit_{identifier}",
+                              disabled=True),
+            discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel_{identifier}")
         )
     i_channel = inter.channel
     app_thread = await i_channel.create_thread(name="Character Registration",
@@ -861,10 +863,10 @@ async def newregister(inter, character_id:int=None):
         for c in ar.children:
             buttons.append(c)
         for b in range(len(buttons)):
-            if buttons[b].custom_id.startswith("custom_"):
+            if buttons[b].custom_id == f"custom_{identifier}":
                 cbutton_i = b
                 cbutton_hidden = False
-            if buttons[b].custom_id.startswith("remove-field_"):
+            if buttons[b].custom_id == f"remove-field_{identifier}":
                 rbutton_i = b
         if (len(cfields_dict) == 0) and (buttons[cbutton_i].disabled is not True):
             del buttons[cbutton_i]
@@ -875,9 +877,9 @@ async def newregister(inter, character_id:int=None):
             await inter_msg.edit(components=[ar, register_ar_2])
         elif (len(cfields_dict) > 0) and (cbutton_hidden is True):
             buttons.insert(2, discord.ui.Button(label="Custom", style=discord.ButtonStyle.blurple,
-                                                custom_id=f"custom_{character_id}"))
+                                                custom_id=f"custom_{identifier}"))
             buttons.insert(4, discord.ui.Button(label="Remove Field", style=discord.ButtonStyle.grey,
-                                                custom_id=f"remove-field_{character_id}"))
+                                                custom_id=f"remove-field_{identifier}"))
             ar.clear_items()
             for but in buttons:
                 ar.append_item(but)
@@ -1038,21 +1040,15 @@ async def newregister(inter, character_id:int=None):
             for c in custom_fields:
                 option = discord.SelectOption(
                     label=c,
-                    value=f"cfield_{c}"
+                    value=f"cfield_{identifier}_{c}"
                 )
                 options.append(option)
             super().__init__(options=options, placeholder="Field to delete...")
 
-        #async def callback(self, inter):
-        #    print("HEY COMPUTER WORK DAMN YOU")
-        #    trgt_field = inter.values  # I doubt this will work, but how are you supposed to get the output?
-        #    await update_preview(app_message, custom_fields)
-        #    await inter.response.send_message(f"Custom field has been removed from application!", ephemeral=True)
-
     @bot.listen("on_dropdown")
     async def on_misc_remove(inter):
         app_embed = app_message.embeds[0].copy()
-        if inter.data.values[0].startswith("cfield_"):
+        if inter.data.values[0].startswith(f"cfield_{identifier}"):
             cfield = inter.data.values[0].split("_")[-1]
             del custom_fields[cfield]
             for f in range(len(app_embed.fields)):
@@ -1064,32 +1060,33 @@ async def newregister(inter, character_id:int=None):
 
     @bot.listen("on_button_click")
     async def on_register_button_click(inter):
-        if inter.data.custom_id.startswith('basic-info_'):
+        if inter.data.custom_id == f"basic-info_{identifier}":
             await inter.response.send_modal(modal=RegisterBasicInfoFields())
-        elif inter.data.custom_id.startswith("details_"):
+        elif inter.data.custom_id == f"details_{identifier}":
             await inter.response.send_modal(modal=RegisterDetailsFields())
-        elif inter.data.custom_id.startswith("custom_"):
+        elif inter.data.custom_id == f"custom_{identifier}":
             await inter.response.send_modal(modal=RegisterCustomFields())
-        elif inter.data.custom_id.startswith("add-field_"):
+        elif inter.data.custom_id == f"add-field_{identifier}":
             if len(custom_fields) > 5:
                 await inter.response.send_message("You've already made the maximum number of custom fields!")
             else:
                 await inter.response.send_modal(modal=RegisterNewField())
-        elif inter.data.custom_id.startswith("remove-field_"):
+        elif inter.data.custom_id == f"remove-field_{identifier}":
             await inter.response.send_message("What custom field would you like to delete?",
                                               components=RegisterRemoveMenu())
-        elif inter.data.custom_id == "cancel":
+        elif inter.data.custom_id == f"cancel_{identifier}":
             await inter.response.send_message("Are you sure you want to cancel character creation?", components=[
-                discord.ui.Button(label="Yes", style=discord.ButtonStyle.green, custom_id="confirm_cancel"),
-                discord.ui.Button(label="No", style=discord.ButtonStyle.red, custom_id="abort_cancel")
+                discord.ui.Button(label="Yes", style=discord.ButtonStyle.green,
+                                  custom_id=f"confirm_cancel_{identifier}"),
+                discord.ui.Button(label="No", style=discord.ButtonStyle.red, custom_id=f"abort_cancel_{identifier}")
             ])
-        elif inter.data.custom_id == "confirm_cancel":
+        elif inter.data.custom_id == f"confirm_cancel_{identifier}":
             await inter.response.send_message("Character creation has been stopped.")
-        elif inter.data.custom_id == "abort_cancel":
+        elif inter.data.custom_id == f"abort_cancel_{identifier}":
             await inter.response.send_message("Cancellation aborted.", delete_after=5)
             # cancel_message = await inter.original_response()
             # await discord.Message.delete(cancel_message, delay=5)
-        elif inter.data.custom_id == "submit":
+        elif inter.data.custom_id == f"submit_{identifier}":
             await inter.response.send_message("Placeholder 'character has been submitted' message.")
 
 
