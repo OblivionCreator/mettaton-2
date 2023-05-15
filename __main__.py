@@ -794,6 +794,7 @@ async def newregister(inter, character_id:int=None):
     field_data = {"Owner": f"{inter.author}", "Status": "Pending", "Name": "", "Age": "", "Gender": "",
                   "Abilities/Tools": "", "Appearance": "", "Species": "", "Backstory": "", "Personality": ""}
     custom_fields = {"MRC": "", "Portrait": ""}
+    canon_chars = getDenyList()
     if character_id:
         temp_data = _getCharDict(character_id)
         if isinstance(temp_data, dict) and temp_data[getLang("Fields", "owner")] == inter.author.id:
@@ -881,11 +882,17 @@ async def newregister(inter, character_id:int=None):
 
         # The callback received when the user input is completed.
         async def callback(self, inter: discord.ModalInteraction):
+            not_allowed = False
             for key, value in inter.text_values.items():
-                if key in field_data.keys():
-                    field_data[key] = value
-            await update_preview(app_message, field_data)
-            await inter.response.send_message(f"Character's basic info has been edited!", ephemeral=True)
+                if value in canon_chars:
+                    await inter.response.send_message("Canon characters are not allowed!", ephemeral=True)
+                    not_allowed = True
+            if not not_allowed:
+                for key, value in inter.text_values.items():
+                    if key in field_data.keys():
+                        field_data[key] = value
+                await update_preview(app_message, field_data)
+                await inter.response.send_message(f"Character's basic info has been edited!", ephemeral=True)
 
     class RegisterDetailsFields(discord.ui.Modal):
         def __init__(self):
@@ -968,12 +975,47 @@ async def newregister(inter, character_id:int=None):
         async def callback(self, inter: discord.ModalInteraction):
             app_embed = app_message.embeds[0].copy()
             new_field = []
+            dupe_field = False
             for key, value in inter.text_values.items():
                 new_field.append(value)
-            custom_fields[new_field[0]] = new_field[1]
-            app_embed.add_field(name=new_field[0], value=new_field[1])
-            await update_preview(app_message, custom_fields)
-            await inter.response.send_message(f"Custom field has been added to application!", ephemeral=True)
+            for f in app_embed.fields:
+                if f.name == new_field[0]:
+                    await inter.response.send_message("A field already exists with that name!", ephemeral=True)
+                    dupe_field = True
+            if not dupe_field:
+                custom_fields[new_field[0]] = new_field[1]
+                app_embed.add_field(name=new_field[0], value=new_field[1])
+                await update_preview(app_message, custom_fields)
+                await inter.response.send_message(f"Custom field has been added to application!", ephemeral=True)
+
+    class RegisterRemoveMenu(discord.ui.Select):
+        def __init__(self):
+            options = []
+            for c in custom_fields:
+                option = discord.SelectOption(
+                    label=c,
+                    value=f"cfield_{c}"
+                )
+                options.append(option)
+            super().__init__(options=options, placeholder="Field to delete...")
+
+        #async def callback(self, inter):
+        #    print("HEY COMPUTER WORK DAMN YOU")
+        #    trgt_field = inter.values  # I doubt this will work, but how are you supposed to get the output?
+        #    await update_preview(app_message, custom_fields)
+        #    await inter.response.send_message(f"Custom field has been removed from application!", ephemeral=True)
+
+    @bot.listen("on_dropdown")
+    async def on_misc_remove(inter):
+        app_embed = app_message.embeds[0].copy()
+        if inter.data.values[0].startswith("cfield_"):
+            cfield = inter.data.values[0].split("_")[-1]
+            del custom_fields[cfield]
+            for f in range(len(app_embed.fields)):
+                if app_embed.fields[f].name == cfield:
+                    app_embed.remove_field(f)
+                    await app_message.edit(embed=app_embed)
+            await inter.response.send_message(f"Custom field has been removed from application!", ephemeral=True)
 
     @bot.listen("on_button_click")
     async def on_register_button_click(inter):
@@ -989,20 +1031,6 @@ async def newregister(inter, character_id:int=None):
             else:
                 await inter.response.send_modal(modal=RegisterNewField())
         elif inter.data.custom_id.startswith("remove-field_"):
-            cfield_names = []
-            for key in custom_fields:
-                cfield_names.append(key)
-
-            class RegisterRemoveMenu(discord.ui.Select):
-                def __init__(self):
-                    super().__init__(options=cfield_names, placeholder="Field to delete...")
-
-                async def callback(self, inter):
-                    print("HEY COMPUTER WORK DAMN YOU")
-                    trgt_field = inter.values  # I doubt this will work, but how are you supposed to get the output?
-                    await update_preview(app_message, custom_fields)
-                    await inter.response.send_message(f"Custom field has been removed from application!", ephemeral=True)
-
             await inter.response.send_message("What custom field would you like to delete?",
                                               components=RegisterRemoveMenu())
         elif inter.data.custom_id == "cancel":
