@@ -816,23 +816,22 @@ async def newregister(inter, character_id:int=None):
                               custom_id=f"basic-info_{character_id}"),
             discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple,
                               custom_id=f"details_{character_id}"),
-            discord.ui.Button(label="Custom", style=discord.ButtonStyle.blurple,
-                              custom_id=f"custom_{character_id}", disabled=True),
             discord.ui.Button(label="Add Field", style=discord.ButtonStyle.grey,
-                              custom_id=f"add-field_{character_id}"),
-            discord.ui.Button(label="Remove Field", style=discord.ButtonStyle.grey,
-                              custom_id=f"remove-field_{character_id}")
+                              custom_id=f"add-field_{character_id}")
         )
     register_ar_2 = discord.ui.ActionRow(
             discord.ui.Button(label="Submit", style=discord.ButtonStyle.green, custom_id="submit", disabled=True),
             discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel")
         )
-    await inter.response.send_message(embed=application_embed, components=[
+    i_channel = inter.channel
+    app_thread = await i_channel.create_thread(name="Character Registration",
+                                               type=discord.ChannelType.private_thread)
+    app_message = await app_thread.send(embed=application_embed, components=[
         register_ar_1,
         register_ar_2
     ])
-    await inter.followup.send('Placeholder "check your DMs" message!')
-    app_message = await inter.original_response()  # To access the original message later for editing.
+    await app_thread.send(inter.author.mention, allowed_mentions=discord.AllowedMentions(users=True))
+    await inter.response.send_message("Started character creation!", ephemeral=True)
 
     async def update_preview(embed_inter, info):
         embed = embed_inter.embeds[0].copy()
@@ -857,19 +856,27 @@ async def newregister(inter, character_id:int=None):
 
     async def check_cfield_no(inter_msg, ar, cfields_dict):
         buttons = []
+        cbutton_hidden = True
         for c in ar.children:
             buttons.append(c)
         for b in range(len(buttons)):
             if buttons[b].custom_id.startswith("custom_"):
                 cbutton_i = b
+                cbutton_hidden = False
+            if buttons[b].custom_id.startswith("remove-field_"):
+                rbutton_i = b
         if (len(cfields_dict) == 0) and (buttons[cbutton_i].disabled is not True):
-            buttons[cbutton_i].disabled = True
+            del buttons[cbutton_i]
+            del buttons[rbutton_i-1]
             ar.clear_items()
             for but in buttons:
                 ar.append_item(but)
             await inter_msg.edit(components=[ar, register_ar_2])
-        elif (len(cfields_dict) > 0) and (buttons[cbutton_i].disabled is True):
-            buttons[cbutton_i].disabled = False
+        elif (len(cfields_dict) > 0) and (cbutton_hidden is True):
+            buttons.insert(2, discord.ui.Button(label="Custom", style=discord.ButtonStyle.blurple,
+                                                custom_id=f"custom_{character_id}"))
+            buttons.insert(4, discord.ui.Button(label="Remove Field", style=discord.ButtonStyle.grey,
+                                                custom_id=f"remove-field_{character_id}"))
             ar.clear_items()
             for but in buttons:
                 ar.append_item(but)
@@ -1082,7 +1089,7 @@ async def newregister(inter, character_id:int=None):
             # cancel_message = await inter.original_response()
             # await discord.Message.delete(cancel_message, delay=5)
         elif inter.data.custom_id == "submit":
-            inter.response.send_message("Placeholder 'character has been submitted' message.")
+            await inter.response.send_message("Placeholder 'character has been submitted' message.")
 
 
 @bot.command(pass_context=True, name=getLang("Commands", "CMD_REGISTER"),
