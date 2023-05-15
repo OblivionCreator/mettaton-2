@@ -793,7 +793,7 @@ async def newregister(inter, character_id:int=None):
     application_embed = discord.Embed(color=discord.Color.yellow())
     field_data = {"Owner": f"{inter.author}", "Status": "Pending", "Name": "", "Age": "", "Gender": "",
                   "Abilities/Tools": "", "Appearance": "", "Species": "", "Backstory": "", "Personality": ""}
-    custom_fields = {"MRC": "", "Portrait": ""}
+    custom_fields = {}
     canon_chars = getDenyList()
     if character_id:
         temp_data = _getCharDict(character_id)
@@ -817,14 +817,14 @@ async def newregister(inter, character_id:int=None):
             discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple,
                               custom_id=f"details_{character_id}"),
             discord.ui.Button(label="Custom", style=discord.ButtonStyle.blurple,
-                              custom_id=f"custom_{character_id}"),
-            discord.ui.Button(label="+", style=discord.ButtonStyle.grey,
+                              custom_id=f"custom_{character_id}", disabled=True),
+            discord.ui.Button(label="Add Field", style=discord.ButtonStyle.grey,
                               custom_id=f"add-field_{character_id}"),
-            discord.ui.Button(label="-", style=discord.ButtonStyle.grey,
+            discord.ui.Button(label="Remove Field", style=discord.ButtonStyle.grey,
                               custom_id=f"remove-field_{character_id}")
         )
     register_ar_2 = discord.ui.ActionRow(
-            discord.ui.Button(label="Submit", style=discord.ButtonStyle.green, custom_id="submit"),
+            discord.ui.Button(label="Submit", style=discord.ButtonStyle.green, custom_id="submit", disabled=True),
             discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel")
         )
     await inter.response.send_message(embed=application_embed, components=[
@@ -841,6 +841,39 @@ async def newregister(inter, character_id:int=None):
                 key = embed.fields[f].name
                 embed.set_field_at(f, name=key, value=info[key], inline=False)
         await embed_inter.edit(embed=embed)
+
+    async def check_completion(inter_msg,  ar, fields_dict):
+        completed = True
+        for f in fields_dict:
+            if fields_dict[f] == "":
+                completed = False
+        if completed:
+            submit_button, cancel_button = ar.children
+            submit_button.disabled = False
+            ar.clear_items()
+            ar.append_item(submit_button)
+            ar.append_item(cancel_button)
+            await inter_msg.edit(components=[register_ar_1, ar])
+
+    async def check_cfield_no(inter_msg, ar, cfields_dict):
+        buttons = []
+        for c in ar.children:
+            buttons.append(c)
+        for b in range(len(buttons)):
+            if buttons[b].custom_id.startswith("custom_"):
+                cbutton_i = b
+        if (len(cfields_dict) == 0) and (buttons[cbutton_i].disabled is not True):
+            buttons[cbutton_i].disabled = True
+            ar.clear_items()
+            for but in buttons:
+                ar.append_item(but)
+            await inter_msg.edit(components=[ar, register_ar_2])
+        elif (len(cfields_dict) > 0) and (buttons[cbutton_i].disabled is True):
+            buttons[cbutton_i].disabled = False
+            ar.clear_items()
+            for but in buttons:
+                ar.append_item(but)
+            await inter_msg.edit(components=[ar, register_ar_2])
 
     class RegisterBasicInfoFields(discord.ui.Modal):
         def __init__(self):
@@ -891,6 +924,7 @@ async def newregister(inter, character_id:int=None):
                 for key, value in inter.text_values.items():
                     if key in field_data.keys():
                         field_data[key] = value
+                await check_completion(app_message, register_ar_2, field_data)
                 await update_preview(app_message, field_data)
                 await inter.response.send_message(f"Character's basic info has been edited!", ephemeral=True)
 
@@ -932,6 +966,7 @@ async def newregister(inter, character_id:int=None):
             for key, value in inter.text_values.items():
                 if key in field_data.keys():
                     field_data[key] = value
+            await check_completion(app_message, register_ar_2, field_data)
             await update_preview(app_message, field_data)
             await inter.response.send_message(f"Character's details have been edited!", ephemeral=True)
 
@@ -985,6 +1020,7 @@ async def newregister(inter, character_id:int=None):
             if not dupe_field:
                 custom_fields[new_field[0]] = new_field[1]
                 app_embed.add_field(name=new_field[0], value=new_field[1])
+                await check_cfield_no(app_message, register_ar_1, custom_fields)
                 await update_preview(app_message, custom_fields)
                 await inter.response.send_message(f"Custom field has been added to application!", ephemeral=True)
 
@@ -1015,6 +1051,7 @@ async def newregister(inter, character_id:int=None):
                 if app_embed.fields[f].name == cfield:
                     app_embed.remove_field(f)
                     await app_message.edit(embed=app_embed)
+            await check_cfield_no(app_message, register_ar_1, custom_fields)
             await inter.response.send_message(f"Custom field has been removed from application!", ephemeral=True)
 
     @bot.listen("on_button_click")
