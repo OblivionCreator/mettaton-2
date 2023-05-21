@@ -392,10 +392,8 @@ async def block_help(ctx):
         return True
 
 
-
 async def charadd(owner, name, age='', gender='', abil='', appear='', backg='', person='', prefilled='', misc=None,
                   status='Pending', charID='', species=''):
-
     if not misc:
         misc = '{}'
 
@@ -740,7 +738,8 @@ async def reRegister(ctx, charID):
                                   species=cfields[getLang("Fields", "species")],
                                   backg=cfields[getLang("Fields", "background")],
                                   person=cfields[getLang("Fields", "personality")],
-                                  prefilled=cfields[getLang("Fields", "prefilled")], charID=charID, misc=json.dumps(misc))
+                                  prefilled=cfields[getLang("Fields", "prefilled")], charID=charID,
+                                  misc=json.dumps(misc))
             await alertGMs(ctx, charID, resub=True, old=oldchr)
             await user.send(getLang("Register", "REGISTER_SUBMISSION").format(charID))
             registerLoop = False
@@ -790,7 +789,7 @@ async def custom_Register(ctx, user, misc):
 
 
 @bot.slash_command(name="newregister", guild_ids=[770428394918641694, 363821745590763520])
-async def newregister(inter, character_id:int=None):
+async def newregister(inter, character_id: int = None):
     identifier = f"{inter.author.id}.{random.randint(1, 100)}"
     application_embed = discord.Embed(color=discord.Color.yellow())
     field_data = {"Owner": f"{inter.author}", "Status": "Pending", "Name": "", "Age": "", "Gender": "",
@@ -814,37 +813,59 @@ async def newregister(inter, character_id:int=None):
         application_embed.title = f"Preview for ID {character_id}"
 
     register_ar_1 = discord.ui.ActionRow(
-            discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple,
-                              custom_id=f"basic-info_{identifier}"),
-            discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple,
-                              custom_id=f"details_{identifier}"),
-            discord.ui.Button(label="Add Field", style=discord.ButtonStyle.grey,
-                              custom_id=f"add-field_{identifier}")
-        )
+        discord.ui.Button(label="Basic Info", style=discord.ButtonStyle.blurple,
+                          custom_id=f"basic-info_{identifier}"),
+        discord.ui.Button(label="Details", style=discord.ButtonStyle.blurple,
+                          custom_id=f"details_{identifier}"),
+        discord.ui.Button(label="Add Field", style=discord.ButtonStyle.grey,
+                          custom_id=f"add-field_{identifier}")
+    )
     register_ar_2 = discord.ui.ActionRow(
-            discord.ui.Button(label="Submit", style=discord.ButtonStyle.green, custom_id=f"submit_{identifier}",
-                              disabled=True),
-            discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel_{identifier}")
-        )
+        discord.ui.Button(label="Submit", style=discord.ButtonStyle.green, custom_id=f"submit_{identifier}",
+                          disabled=True),
+        discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red, custom_id=f"cancel_{identifier}")
+    )
     i_channel = inter.channel
     app_thread = await i_channel.create_thread(name="Character Registration",
                                                type=discord.ChannelType.private_thread)
-    app_message = await app_thread.send(embed=application_embed, components=[
-        register_ar_1,
-        register_ar_2
-    ])
-    await app_thread.send(inter.author.mention, allowed_mentions=discord.AllowedMentions(users=True))
-    await inter.response.send_message("Started character creation!", ephemeral=True)
+    app_message = await app_thread.send(f"Hi, {inter.author.mention}! Welcome to character registration.",
+                                        embed=application_embed, components=[register_ar_1, register_ar_2],
+                                        allowed_mentions=discord.AllowedMentions(users=True))
+    await inter.response.send_message(f"Started character creation in {app_thread.mention}!", ephemeral=True)
 
     async def update_preview(embed_inter, info):
         embed = embed_inter.embeds[0].copy()
+        embed_len = await get_embed_len(embed)
         for f in range(len(embed.fields)):
             if embed.fields[f].name in info.keys():
                 key = embed.fields[f].name
-                embed.set_field_at(f, name=key, value=info[key], inline=False)
+                if len(info[key]) > 1024:
+                    embed.set_field_at(f, name=key, value="[TOO LARGE FOR PREVIEW]", inline=False)
+                elif embed_len + len(info[key]) > 6000:
+                    await trailing_preview(embed_inter)
+                else:
+                    embed.set_field_at(f, name=key, value=info[key], inline=False)
         await embed_inter.edit(embed=embed)
 
-    async def check_completion(inter_msg,  ar, fields_dict):
+    async def trailing_preview(embed_inter):
+        embed = embed_inter.embeds[0].copy()
+        reduction_size = 512
+        long_fields = []
+        for f in range(len(embed.fields)):
+            if len(embed.fields[f].value) > 512:
+                long_fields.append(f)
+        for f in long_fields:
+            embed.set_field_at(f, name=embed.fields[f].name,
+                               value=f"{embed.fields[f].value[0:reduction_size - 1]}...", inline=False)
+        await embed_inter.edit(embed=embed)
+
+    async def get_embed_len(embed):
+        embed_len = 0
+        for f in embed.fields:
+            embed_len += len(f.value)
+        return embed_len
+
+    async def check_completion(inter_msg, ar, fields_dict):
         completed = True
         for f in fields_dict:
             if fields_dict[f] == "":
@@ -870,7 +891,7 @@ async def newregister(inter, character_id:int=None):
                 rbutton_i = b
         if (len(cfields_dict) == 0) and (buttons[cbutton_i].disabled is not True):
             del buttons[cbutton_i]
-            del buttons[rbutton_i-1]
+            del buttons[rbutton_i - 1]
             ar.clear_items()
             for but in buttons:
                 ar.append_item(but)
@@ -1029,6 +1050,9 @@ async def newregister(inter, character_id:int=None):
                     dupe_field = True
             if not dupe_field:
                 custom_fields[new_field[0]] = new_field[1]
+                embed_len = await get_embed_len(app_embed)
+                if embed_len + len(new_field[1]) > 6000:
+                    await trailing_preview(embed_inter)
                 app_embed.add_field(name=new_field[0], value=new_field[1])
                 await check_cfield_no(app_message, register_ar_1, custom_fields)
                 await update_preview(app_message, custom_fields)
@@ -1804,11 +1828,11 @@ def previewChar(cfields=None, prefilled=None, name=None, misc=None):
                                                            value=cfields[getLang("Fields", 'appearance')],
                                                            inline=False)
         if cfields['species'] != '': embedVar.add_field(name=getLang("Fields", "species").capitalize() + ':',
-                                                            value=cfields[getLang("Fields", 'species')],
-                                                            inline=False)
+                                                        value=cfields[getLang("Fields", 'species')],
+                                                        inline=False)
         if cfields['backstory'] != '': embedVar.add_field(name=getLang("Fields", "backstory").capitalize() + ':',
-                                                           value=cfields[getLang("Fields", 'background')],
-                                                           inline=False)
+                                                          value=cfields[getLang("Fields", 'background')],
+                                                          inline=False)
         if cfields['personality'] != '': embedVar.add_field(name=getLang("Fields", "personality").capitalize() + ':',
                                                             value=cfields[getLang("Fields", 'personality')],
                                                             inline=False)
@@ -2274,7 +2298,6 @@ async def statusChanger():
 
 @bot.command(name=getLang("Commands", "CMD_SEND_WEBHOOK"))
 async def send(ctx, id, *, message: str, raw_name=None):
-
     if id:
         charData = _getCharDict(id)
         if charData == 'INVALID CHARACTER':
