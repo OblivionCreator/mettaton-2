@@ -1907,7 +1907,7 @@ async def runBackup():
 
     backupOngoing = True
 
-    channel = bot.get_channel(int(GMChannel()))
+    channel = bot.get_channel(int(LogChannel()))
     date = datetime.now()
     timerStart = time.perf_counter()
     try:
