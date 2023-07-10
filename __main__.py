@@ -1629,10 +1629,10 @@ async def _registerChar(ctx, user):
                         currentlyRegistering.remove(user.id)
 
                         if selector == getLang("Register", "REGISTER_COMPLETE"):
-                            await user.send(getLang("Register", "REGISTER_SUCCESS_ID").format(int(charID)))
+                            await user.send(getLang("Register", "REGISTER_SUCCESS_ID").format(name, int(charID), int(charID)))
                             await alertGMs(ctx, charID)
                         else:
-                            await user.send(getLang("Register", "REGISTER_SUCCESS_STORE").format(int(charID)))
+                            await user.send(getLang("Register", "REGISTER_SUCCESS_STORE").format(name, int(charID), int(charID)))
                         return
                 elif selector == getLang("Register", "REGISTER_EXIT"):
                     await user.send(getLang("Register", "REGISTER_ABORTED"))
