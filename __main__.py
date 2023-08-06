@@ -1628,6 +1628,8 @@ async def _registerChar(ctx, user):
 
                         currentlyRegistering.remove(user.id)
 
+                        name = cfields[getLang("Fields", "name")]
+
                         if selector == getLang("Register", "REGISTER_COMPLETE"):
                             await user.send(getLang("Register", "REGISTER_SUCCESS_ID").format(name, int(charID), int(charID)))
                             await alertGMs(ctx, charID)
