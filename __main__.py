@@ -1117,6 +1117,7 @@ def _getCharDict(charID=0):
 @bot.command(name=getLang("Commands", "CMD_SET"), aliases=['setprop'])
 async def _set(ctx, charID='', field='', *, message: str = ''):
     alertChannel = bot.get_channel(LogChannel())
+    iscustom = False
 
     if charID == '' or field == '':
         if charID == '':
@@ -1133,8 +1134,8 @@ async def _set(ctx, charID='', field='', *, message: str = ''):
             await ctx.send(getLang("Set", "SET_FAILED_ID_STATIC"))
             return
     else:
-        await _custom(ctx, charID=charID, field=field, message=message)
-        return
+        iscustom = True
+        fSan = 'n/a - custom character'
 
     if message == '' or message == getLang("Set", "SET_DELETE"):
         message = ''
@@ -1163,6 +1164,10 @@ async def _set(ctx, charID='', field='', *, message: str = ''):
 
     if not charPermissionCheck(ctx, ownerID):
         await ctx.send(getLang("Set", "SET_FAILED_NO_PERMISSION"))
+        return
+
+    if iscustom:
+        await _custom(ctx, charID=charID, field=field, message=message)
         return
 
     _setSQL(icharID, fSan, message)
