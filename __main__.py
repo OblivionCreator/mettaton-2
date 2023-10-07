@@ -988,12 +988,19 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
                            value=charOwner or f'{charData[getLang("Fields", "owner")]} {getLang("Fields", "left")}',
                            inline=False)
 
+        too_long = False
+
         for i in charData:
             if i not in noDisplay:
                 if charData[i] == '' or charData[i] is None:
                     pass
                 else:
-                    embedVar.add_field(name=i.title(), value=charData[i],
+                    if len(charData[i]) > 1024:
+                        too_long = True
+                        embedVar.add_field(name=i.title(), value=f"{charData[i][:1021]}...",
+                                           inline=False)
+                    else:
+                        embedVar.add_field(name=i.title(), value=charData[i],
                                        inline=False)  # Thanks @Casey C. Creeks#0938 for .title() reminder!
 
         if charData["misc"] == '{}':
@@ -1018,14 +1025,38 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
             except:
                 pass
 
+        if too_long:
+            embedVar.add_field(name="One or more fields were too long to be shown!", value="Please extract the provided text file to view the full character.", inline=False)
+            filePath = charToTxt(charID=charData["charID"], owner=charData[getLang("Fields", "owner")],
+                                 status=charData[getLang("Fields", "status")],
+                                 name=charData[getLang("Fields", "name")], age=charData[getLang("Fields", "age")],
+                                 gender=charData[getLang("Fields", "gender")],
+                                 abil=charData[getLang("Fields", "abilities/tools")],
+                                 appear=charData[getLang("Fields", "appearance")],
+                                 species=charData[getLang("Fields", "species")],
+                                 backg=charData[getLang("Fields", "background")],
+                                 person=charData[getLang("Fields", "personality")],
+                                 prefilled=charData[getLang("Fields", "prefilled")],
+                                 misc=customFields, ctx=ctx)
+
         if returnEmbed is True:
             return embedVar
 
         try:
             if dmchannel is False:
-                await ctx.send(embed=embedVar)
+                if too_long:
+                    charFile = open(filePath, 'r')
+                    await ctx.send(embed=embedVar, file=discord.File(filePath))
+                    charFile.close()
+                else:
+                    await ctx.send(embed=embedVar)
             else:
-                await ctx.author.send(embed=embedVar)
+                if too_long:
+                    charFile = open(filePath, 'r')
+                    await ctx.send(embed=embedVar, file=discord.File(filePath))
+                    charFile.close()
+                else:
+                    await ctx.author.send(embed=embedVar)
         except HTTPException:
             if dmchannel is False:
                 await ctx.send(getLang("View", "VIEW_LONG_FILE_DUMP"))
@@ -1047,7 +1078,7 @@ async def _view(ctx, idinput='', dmchannel=False, returnEmbed=False):
             if dmchannel is False:
                 await ctx.send(file=discord.File(filePath))
             else:
-                ctx.author.send(file=discord.File(filePath))
+                await ctx.author.send(file=discord.File(filePath))
             charFile.close()
             clearLog()
 
