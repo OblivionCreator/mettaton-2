@@ -17,7 +17,7 @@ import json
 from discord import HTTPException
 from discord.utils import get
 from configparser import ConfigParser
-from resources import getdiff, webhook_manager
+from scripts import getdiff, webhook_manager
 import validators
 import re
 
@@ -28,7 +28,7 @@ pageSize = 20
 
 def getConfig():
     try:
-        with open('.config', 'r') as file:
+        with open('config/.config', 'r') as file:
             jsonOBJ = json.load(file)
             file.close()
     except FileNotFoundError:
@@ -67,7 +67,7 @@ def configFields():
 
 async def configLoader():
     try:
-        with open('.config') as file:
+        with open('config/.config') as file:
             print("Loading Config...")
 
             conf = getConfig()
@@ -95,7 +95,7 @@ async def configLoader():
                     await gmc.send(getLang("Log", "lg_4"))
                 else:
                     print(getLang("Log", "lg_4"))
-        file = open('.config', "w")
+        file = open('config/.config', "w")
         file.write(json.dumps(confTemplate))
         file.close()
 
@@ -103,7 +103,7 @@ async def configLoader():
 
         print(".config File not found! Creating the Config...")
 
-        file = open('.config', 'x')
+        file = open('config/.config', 'x')
 
         configDict = configFields()
 
@@ -188,7 +188,7 @@ async def getdm(ctx):
 async def clearconfig(ctx):
     config = configFields()
 
-    file = open('.config', 'w')
+    file = open('config/.config', 'w')
 
     configDict = configFields()
 
@@ -272,7 +272,7 @@ def addDeny(term):
     denyList.append(term)
     conf["denylist"] = denyList
 
-    with open('.config', 'w') as f:
+    with open('config/.config', 'w') as f:
         json.dump(conf, f)
         f.close()
 
@@ -289,7 +289,7 @@ def delDeny(term):
     denyList.remove(term)
     conf["denylist"] = denyList
 
-    with open('.config', 'w') as f:
+    with open('config/.config', 'w') as f:
         json.dump(conf, f)
         f.close()
 
@@ -350,7 +350,7 @@ def clearLog():  # Deletes all files in charoverflow.
         os.remove(f)
 
 
-file = open("token.txt")
+file = open("./config/token.txt")
 token = file.read()
 
 
@@ -358,7 +358,7 @@ def close_connection(db_file):
     conn.close()
 
 
-database = "mttchars.db"
+database = "config/mttchars.db"
 conn = create_connection(database)
 
 
@@ -490,13 +490,13 @@ async def _setLogChannel(ctx):
 
 
 def updateConfig(field, value):
-    with open('.config', 'r') as file:
+    with open('config/.config', 'r') as file:
         jsonOBJ = json.load(file)
         file.close()
 
     jsonOBJ[field] = value
 
-    with open('.config', 'w') as file:
+    with open('config/.config', 'w') as file:
         json.dump(jsonOBJ, file)
 
 

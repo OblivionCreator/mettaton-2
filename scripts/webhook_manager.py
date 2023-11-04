@@ -62,7 +62,7 @@ async def sendWH(name, img, message, channel, author):
 
 def getWebhookCache():  # Gets cache of webhooks.
     try:
-        with open("resources/temp/temp_webhooks.json", 'r') as file:
+        with open("scripts/temp/temp_webhooks.json", 'r') as file:
             try:
                 c_w = json.loads(file.read())
                 return c_w
@@ -73,5 +73,5 @@ def getWebhookCache():  # Gets cache of webhooks.
 
 
 def setWebhookCache(c_w):  # Saves webhook cache.
-    with open("resources/temp/temp_webhooks.json", 'w+') as file:
+    with open("scripts/temp/temp_webhooks.json", 'w+') as file:
         file.write(json.dumps(c_w))

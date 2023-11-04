@@ -1,8 +1,8 @@
 # Project exclude paths
 /venv/
-/token.txt
+/config/token.txt
 /charoverflow/
-/mttchars.db
-/client_secrets.json
+/config/mttchars.db
+client_secrets.json
 /credentials.txt
-/.config
+/config/.config
