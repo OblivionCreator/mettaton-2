@@ -199,6 +199,16 @@ async def clearconfig(ctx):
     await ctx.send(getLang("ClearConfig", "CLEAR_CONFIG_SUCCESS"))
     return
 
+@bot.command(name='clear')
+async def _clear_registering(ctx):
+    if not await checkGM(ctx):
+        await ctx.send("You do not have permission to clear the registering list!")
+        return
+    global currentlyRegistering
+    old_registering = len(currentlyRegistering)
+    currentlyRegistering = []
+    await ctx.send(f"Currently Registering List has been cleared. The list contained {old_registering} users.")
+    
 
 # Deny List Handling
 
