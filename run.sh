@@ -1,0 +1,1 @@
+docker run --name mtt2 -v /d-persistent/mettaton-2:/app/config mettaton-2

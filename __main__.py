@@ -354,7 +354,7 @@ def create_connection(db_file):
 
 
 def clearLog():  # Deletes all files in charoverflow.
-    files = glob.glob('config/charoverflow/charoverflow/*')
+    files = glob.glob('charoverflow/*')
     for f in files:
         print(f)
         os.remove(f)
@@ -920,7 +920,7 @@ def charToTxt(charID, owner, status, name, age, gender, abil, species, appear, b
         for i in misc:
             miscStr = f'{miscStr}{i}: {misc[i]}\n\n'
 
-    path = f"config/charoverflow/charoverflow/{curTime}-{charID}.txt"
+    path = f"charoverflow/{curTime}-{charID}.txt"
 
     charFile = open(path, 'x')
 
