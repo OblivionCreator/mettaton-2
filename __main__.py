@@ -205,13 +205,9 @@ async def _clear_registering(ctx):
         await ctx.send("You do not have permission to clear the registering list!")
         return
     global currentlyRegistering
-    old_registering = currentlyRegistering
+    old_registering = len(currentlyRegistering)
     currentlyRegistering = []
-    old_str = ""
-    for old in old_registering:
-        temp = await bot.get_or_fetch_member(old)
-        old_str += f"{temp.name}\n"
-    await ctx.send(f"Currently Registering List has been cleared. The list contained:\n{old_str}")
+    await ctx.send(f"Currently Registering List has been cleared. The list contained {old_registering} users.")
     
 
 # Deny List Handling
